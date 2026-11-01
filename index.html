@@ -2,41 +2,40 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>每日運動紀錄系統 | Workout Logger Pro</title>
-    <!-- Tailwind CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>每日運動紀錄與訓練量管理系統</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter & Noto Sans TC -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', 'Noto Sans TC', sans-serif;
-            background-color: #f8fafc;
+            background-color: #f1f5f9;
             color: #0f172a;
-            -webkit-tap-highlight-color: transparent;
         }
-        /* 自訂捲軸美化 */
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f5f9;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 3px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-        /* 避免 iOS Safari 點擊輸入框時自動放大畫面 */
-        @media screen and (max-width: 640px) {
+        /* 避免 iOS Safari 點擊輸入框自動放大，並修正手機版日期框過大與跑版問題 */
+        @media screen and (max-width: 768px) {
             input, select, textarea {
                 font-size: 16px !important;
             }
+        }
+        input[type="date"],
+        input[type="month"] {
+            -webkit-appearance: none;
+            appearance: none;
+            min-width: 0;
+            max-width: 100%;
+            height: 40px;
+            line-height: 1.25rem;
+            box-sizing: border-box;
+        }
+        input[type="date"]::-webkit-date-and-time-value,
+        input[type="month"]::-webkit-date-and-time-value {
+            text-align: left;
+            margin: 0;
         }
         /* 列印 / PDF 專用樣式 */
         @media print {
@@ -49,12 +48,8 @@
             .print-only {
                 display: block !important;
             }
-            .print-card {
+            .print-break-inside-avoid {
                 break-inside: avoid;
-                page-break-inside: avoid;
-                box-shadow: none !important;
-                border: 1px solid #cbd5e1 !important;
-                margin-bottom: 1.5rem !important;
             }
         }
     </style>
@@ -62,695 +57,695 @@
 <body class="min-h-screen flex flex-col">
 
     <!-- 頂部導覽列 -->
-    <header class="bg-slate-900 text-white shadow-md sticky top-0 z-30 no-print">
-        <div class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
-            <div class="flex items-center space-x-2.5 sm:space-x-3 min-w-0">
-                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-inner shrink-0">
-                    <i class="fa-solid fa-dumbbell text-base sm:text-xl text-white"></i>
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-dumbbell text-lg text-white"></i>
                 </div>
-                <div class="truncate">
-                    <h1 class="text-sm sm:text-lg font-bold tracking-tight truncate">每日運動紀錄系統</h1>
-                    <p class="hidden sm:block text-xs text-slate-400">支援訓練量自動試算 & Google 試算表 / Word / PDF 匯出</p>
+                <div>
+                    <h1 class="text-base sm:text-lg font-bold tracking-tight">每日運動紀錄系統</h1>
+                    <p class="text-[11px] sm:text-xs text-slate-400">自動訓練量試算 ‧ 單日併排綜整 ‧ 試算表/Word/PDF 匯出</p>
                 </div>
             </div>
-            <div class="flex items-center shrink-0">
-                <button onclick="openExportModal()" class="px-3 sm:px-4 py-2 text-xs sm:text-sm bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-semibold rounded-xl shadow-xs transition flex items-center gap-1.5">
+
+            <div class="flex items-center gap-2 sm:gap-3">
+                <button type="button" onclick="openExportModal()"
+                    class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs sm:text-sm font-bold flex items-center gap-2 shadow-sm transition">
                     <i class="fa-solid fa-file-export"></i>
-                    <span class="hidden sm:inline">匯出報表 (CSV / Word / PDF)</span>
-                    <span class="sm:hidden">匯出報表</span>
+                    <span>匯出報表 (試算表 / Word / PDF)</span>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- 通知訊息 Toast -->
-    <div id="toastContainer" class="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-5 sm:bottom-5 z-50 flex flex-col gap-2 pointer-events-none no-print"></div>
+    <!-- 主內容區 -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 no-print">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-    <!-- 主內容區 (手機版支援快速切換分頁、電腦版雙欄並排) -->
-    <main class="flex-1 max-w-7xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-4 sm:py-6 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 no-print">
-        
-        <!-- 左側：新增 / 編輯運動項目表單 (5欄) -->
-        <section id="formSectionAnchor" class="lg:col-span-5">
-            <div class="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4 sm:p-6 lg:sticky lg:top-22">
-                <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+            <!-- 左側：新增 / 編輯運動紀錄表單 (佔 5 欄) -->
+            <section class="lg:col-span-5 bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 sm:p-6 lg:sticky lg:top-20">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3.5 mb-4">
                     <div class="flex items-center gap-2.5">
-                        <span id="formModeIcon" class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold shrink-0">
+                        <span id="formModeBadge" class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">
                             <i class="fa-solid fa-plus"></i>
                         </span>
-                        <div>
-                            <h2 id="formTitle" class="text-base font-bold text-slate-800">新增運動項目</h2>
-                            <p id="formSubtitle" class="text-xs text-slate-500">同日不同運動將自動併排綜整</p>
-                        </div>
+                        <h2 id="formTitle" class="text-base sm:text-lg font-bold text-slate-800">新增運動項目</h2>
                     </div>
-                    <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-xs text-rose-600 hover:text-rose-700 font-semibold px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 transition shrink-0">
+                    <button type="button" id="cancelEditBtn" onclick="resetWorkoutForm()"
+                        class="hidden text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 px-2.5 py-1 rounded-lg transition">
                         取消編輯
                     </button>
                 </div>
 
-                <form id="workoutForm" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <form id="workoutForm" onsubmit="handleSaveWorkout(event)" class="space-y-4">
                     <input type="hidden" id="editingSessionId" value="">
 
-                    <!-- 1. 日期與地點 -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                運動日期 <span class="text-rose-500">*</span>
+                    <!-- 1. 日期與地點 (手機版也保持雙欄精巧並排，避免日期框單獨撐滿整行過大) -->
+                    <div class="grid grid-cols-2 gap-2.5 sm:gap-3">
+                        <div class="min-w-0">
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                1. 運動日期 <span class="text-rose-500">*</span>
                             </label>
                             <input type="date" id="workoutDate" required
-                                class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                class="w-full px-2.5 sm:px-3 py-2 text-xs sm:text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition">
                         </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                運動地點 <span class="text-slate-400 font-normal">(選填)</span>
+                        <div class="min-w-0">
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                4. 地點 <span class="text-slate-400 font-normal">(選填)</span>
                             </label>
-                            <input type="text" id="workoutLocation" placeholder="例：健身房、操場、體育館"
-                                class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                            <input type="text" id="workoutLocation" placeholder="例：健身房、操場"
+                                class="w-full px-2.5 sm:px-3 py-2 text-xs sm:text-sm h-[40px] bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none transition">
                         </div>
                     </div>
 
-                    <!-- 2. 運動類別與常用運動清單 -->
+                    <!-- 2. 運動類別與常用運動清單 (內建直接可見的編輯與刪除區塊) -->
                     <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <label class="block text-xs font-semibold text-slate-700">
-                                運動類別 / 常用清單 <span class="text-rose-500">*</span>
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-xs font-bold text-slate-700">
+                                2. 運動類別 / 常用清單 <span class="text-rose-500">*</span>
                             </label>
-                            <button type="button" onclick="openCategoryManagerModal()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition">
-                                <i class="fa-solid fa-gear"></i>
-                                <span>管理 / 編輯類型</span>
+                            <button type="button" onclick="toggleInlineCategoryManager()" id="toggleCatManagerBtn"
+                                class="text-xs text-white bg-indigo-600 hover:bg-indigo-500 active:scale-95 font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-xl shadow-sm transition">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span id="toggleCatManagerText">管理 / 編輯運動類型</span>
                             </button>
                         </div>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="categoryButtons"></div>
-                    </div>
 
-                    <!-- 自訂類別名稱 (當選擇「其他」時顯示，可設為常用運動) -->
-                    <div id="customCategoryBox" class="hidden space-y-2.5 bg-indigo-50/60 p-3.5 rounded-xl border border-indigo-200/80">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-800 mb-1.5">
-                                自訂運動名稱 <span class="text-rose-500">*</span>
-                            </label>
-                            <div class="flex flex-col sm:flex-row gap-2">
-                                <input type="text" id="customCategoryName" placeholder="輸入名稱，例：羽球、游泳、瑜珈..."
-                                    class="flex-1 px-3 py-2.5 text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <button type="button" onclick="addCustomToFavoritesNow()"
-                                    class="py-2.5 px-3.5 text-xs font-bold bg-amber-500 hover:bg-amber-400 active:scale-95 text-white rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 shrink-0">
-                                    <i class="fa-solid fa-star"></i>
-                                    <span>設為常用運動</span>
+                        <!-- 運動類別按鈕網格 (每個按鈕下方直接附帶「編輯」與「刪除」) -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="categoryButtons"></div>
+
+                        <!-- 內嵌展開式：編輯與刪除運動類型區塊 -->
+                        <div id="inlineCategoryManagerBox" class="hidden mt-3 p-4 rounded-2xl bg-indigo-50/70 border-2 border-indigo-200 space-y-3.5">
+                            <div class="flex items-center justify-between border-b border-indigo-200/70 pb-2.5">
+                                <div class="flex items-center gap-2">
+                                    <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs">
+                                        <i class="fa-solid fa-sliders"></i>
+                                    </span>
+                                    <h4 class="text-xs sm:text-sm font-bold text-slate-800">編輯 / 刪除運動類型 (預設與自訂)</h4>
+                                </div>
+                                <button type="button" onclick="resetDefaultCategories()"
+                                    class="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white px-2.5 py-1 rounded-lg border border-indigo-200 shadow-sm transition flex items-center gap-1">
+                                    <i class="fa-solid fa-rotate-left"></i>
+                                    <span>恢復預設運動</span>
                                 </button>
                             </div>
+
+                            <p class="text-xs text-slate-600 leading-relaxed">
+                                可直接修改下方預設或自訂運動的<strong>名稱</strong>與<strong>紀錄模式</strong>，改完後按「<strong>儲存</strong>」即可更新；或按「<strong>刪除</strong>」移除該類型。
+                            </p>
+
+                            <!-- 內嵌編輯列表 -->
+                            <div id="inlineCategoryManagerList" class="space-y-2 max-h-72 overflow-y-auto pr-1"></div>
+
+                            <!-- 內嵌快速新增常用運動 -->
+                            <div class="pt-2.5 border-t border-indigo-200/70">
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">新增常用運動類型</label>
+                                <div class="flex flex-col sm:flex-row gap-2">
+                                    <input type="text" id="inlineNewCatName" placeholder="輸入名稱 (例：羽球、游泳、單車)"
+                                        class="flex-1 px-3 py-2 text-xs sm:text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <select id="inlineNewCatMode"
+                                        class="px-3 py-2 text-xs sm:text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                        <option value="note">一般備註模式</option>
+                                        <option value="weight">重訓組數模式</option>
+                                        <option value="run">跑步距離模式</option>
+                                    </select>
+                                    <button type="button" onclick="addCategoryFromInline()"
+                                        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-sm transition shrink-0">
+                                        + 新增常用
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <label class="flex items-center gap-2 cursor-pointer select-none pt-0.5">
-                            <input type="checkbox" id="saveAsFavoriteCheckbox" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500">
-                            <span class="text-xs text-slate-600">儲存此筆紀錄時，同時加入上方「常用清單」</span>
+                    </div>
+
+                    <!-- 當選擇「其他 (自訂)」時顯示的自訂輸入與設為常用區塊 -->
+                    <div id="customCategoryBox" class="hidden p-3.5 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2.5">
+                        <label class="block text-xs font-bold text-amber-900">
+                            自訂運動名稱 <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="customCategoryInput" placeholder="例如：羽球、游泳、瑜珈、攀岩..."
+                                class="flex-1 px-3 py-2 text-sm bg-white rounded-xl border border-amber-300 focus:ring-2 focus:ring-amber-500 outline-none">
+                            <button type="button" onclick="promoteCustomToFavorite()"
+                                class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition shrink-0">
+                                <i class="fa-solid fa-star"></i>
+                                <span>設為常用運動</span>
+                            </button>
+                        </div>
+                        <label class="inline-flex items-center gap-2 text-xs text-amber-800 cursor-pointer select-none">
+                            <input type="checkbox" id="autoSaveFavoriteCheck" class="rounded text-amber-600 focus:ring-amber-500">
+                            <span>儲存此筆紀錄時，同時將此名稱加入上方「常用運動清單」</span>
                         </label>
                     </div>
 
-                    <!-- 3. 該項目運動時長 (小時 + 分鐘) -->
+                    <!-- 3. 運動時長 (分項填寫：小時 + 分鐘) -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                            項目時長 <span class="text-rose-500">*</span>
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            3. 本項運動時長 <span class="text-rose-500">*</span>
                         </label>
                         <div class="grid grid-cols-2 gap-3">
-                            <div class="relative flex items-center">
-                                <input type="number" id="durationHours" min="0" max="24" value="1"
-                                    class="w-full pl-3 pr-14 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <span class="absolute right-3 text-xs font-medium text-slate-500 pointer-events-none">小時 (hr)</span>
+                            <div class="relative">
+                                <input type="number" id="durationHours" min="0" max="24" placeholder="0" value="1"
+                                    class="w-full pl-3 pr-12 py-2.5 text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">小時 (hr)</span>
                             </div>
-                            <div class="relative flex items-center">
-                                <input type="number" id="durationMinutes" min="0" max="59" value="0"
-                                    class="w-full pl-3 pr-16 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <span class="absolute right-3 text-xs font-medium text-slate-500 pointer-events-none">分鐘 (min)</span>
+                            <div class="relative">
+                                <input type="number" id="durationMinutes" min="0" max="59" placeholder="0" value="0"
+                                    class="w-full pl-3 pr-12 py-2.5 text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">分鐘 (min)</span>
                             </div>
                         </div>
                     </div>
 
-                    <!-- 4A. 重訓專屬動態區塊 -->
-                    <div id="weightTrainingSection" class="space-y-3 pt-3 border-t border-slate-100">
-                        <div class="flex items-center justify-between gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200/70">
+                    <!-- 動態內容區 A：重訓模式 (動作 -> 多組重量/次數/組數 + 訓練量試算) -->
+                    <div id="weightTrainingSection" class="space-y-3 pt-1">
+                        <div class="flex items-center justify-between">
                             <div>
-                                <h3 class="text-xs font-bold text-slate-800">重訓動作與組數</h3>
-                                <p class="text-[11px] text-slate-500">未填重量自動以「次數×組數」試算</p>
+                                <h3 class="text-xs font-bold text-slate-800">重訓動作與組數明細</h3>
+                                <p class="text-[11px] text-slate-500">未填重量時以「次數 × 組數」計算訓練量</p>
                             </div>
-                            <div class="text-right shrink-0">
-                                <span class="text-[10px] text-slate-500 block">預估訓練量</span>
-                                <span id="liveVolumeBadge" class="text-base font-extrabold text-indigo-600">0</span>
+                            <div class="text-right">
+                                <span class="text-[11px] text-slate-500 block">本項預估總訓練量</span>
+                                <span id="liveVolumePreview" class="text-sm font-extrabold text-indigo-600">0</span>
                             </div>
                         </div>
 
-                        <!-- 動作容器 -->
-                        <div id="exercisesContainer" class="space-y-3 max-h-[420px] overflow-y-auto pr-0.5"></div>
+                        <div id="exerciseBlocksContainer" class="space-y-3"></div>
 
                         <button type="button" onclick="addExerciseBlock()"
-                            class="w-full py-2.5 px-3 text-xs font-bold text-indigo-600 bg-indigo-50/80 hover:bg-indigo-100 active:scale-[0.99] rounded-xl border border-dashed border-indigo-300 transition flex items-center justify-center gap-1.5">
+                            class="w-full py-2.5 rounded-xl border-2 border-dashed border-indigo-300 hover:border-indigo-500 text-indigo-600 hover:bg-indigo-50/50 text-xs font-bold flex items-center justify-center gap-1.5 transition">
                             <i class="fa-solid fa-plus"></i>
-                            <span>新增重訓動作 (如：Squat、滑輪下拉)</span>
+                            <span>新增重訓動作 (例如：squat、滑輪下拉)</span>
                         </button>
                     </div>
 
-                    <!-- 4B. 跑步專屬區塊 -->
-                    <div id="runningSection" class="hidden space-y-3 pt-3 border-t border-slate-100">
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                跑步距離 (km) <span class="text-rose-500">*</span>
-                            </label>
-                            <div class="relative flex items-center">
-                                <input type="number" id="runningDistance" min="0" step="0.01" placeholder="例：3 或 5.5"
-                                    class="w-full pl-3 pr-12 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                                <span class="absolute right-3.5 text-xs font-semibold text-slate-500 pointer-events-none">km</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                                補充備註 <span class="text-slate-400 font-normal">(選填)</span>
-                            </label>
-                            <input type="text" id="runningNote" placeholder="例：配速 5'30、間歇跑..."
-                                class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <!-- 動態內容區 B：跑步模式 (距離 km) -->
+                    <div id="runningSection" class="hidden space-y-2 pt-1">
+                        <label class="block text-xs font-bold text-slate-700">
+                            跑步距離 (km) <span class="text-rose-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <input type="number" id="runningDistance" min="0" step="0.01" placeholder="例如：3 或 5.25"
+                                class="w-full pl-3.5 pr-12 py-2.5 text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">km</span>
                         </div>
                     </div>
 
-                    <!-- 4C. 徒手訓練 / 常用運動 / 其他 專屬區塊 -->
-                    <div id="generalNoteSection" class="hidden space-y-2 pt-3 border-t border-slate-100">
-                        <label class="block text-xs font-semibold text-slate-700 mb-1.5">
-                            內容說明 / 備註 <span class="text-slate-400 font-normal">(選填)</span>
+                    <!-- 動態內容區 C：徒手訓練 / 其他一般備註模式 -->
+                    <div id="noteSection" class="hidden space-y-2 pt-1">
+                        <label class="block text-xs font-bold text-slate-700">
+                            訓練內容 / 備註說明 <span class="text-slate-400 font-normal">(選填)</span>
                         </label>
-                        <textarea id="generalNote" rows="3" placeholder="請輸入訓練內容或運動紀錄（可留空）..."
-                            class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none resize-none"></textarea>
+                        <textarea id="workoutNote" rows="3" placeholder="輸入訓練項目或心得（可換行輸入多項，例如：伏地挺身 20*4、棒式 1min*3）"
+                            class="w-full px-3.5 py-2.5 text-sm bg-slate-50 focus:bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"></textarea>
                     </div>
 
                     <!-- 送出按鈕 -->
                     <div class="pt-2">
-                        <button type="submit" id="submitBtn"
-                            class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-bold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+                        <button type="submit" id="submitWorkoutBtn"
+                            class="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 active:scale-[0.99] text-white font-bold text-sm shadow-md shadow-indigo-500/20 flex items-center justify-center gap-2 transition">
                             <i class="fa-solid fa-floppy-disk"></i>
-                            <span id="submitBtnText">儲存運動項目至當日紀錄</span>
+                            <span id="submitWorkoutBtnText">儲存此項運動紀錄</span>
                         </button>
                     </div>
                 </form>
-            </div>
-        </section>
+            </section>
 
-        <!-- 右側：單日綜整紀錄看板 (7欄) -->
-        <section class="lg:col-span-7 space-y-4 sm:space-y-5">
-            
-            <!-- 篩選與統計摘要列 -->
-            <div class="bg-white rounded-2xl shadow-xs border border-slate-200/90 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
-                        <i class="fa-regular fa-calendar-check text-lg"></i>
-                    </div>
+            <!-- 右側：單日綜整紀錄看板 (佔 7 欄) -->
+            <section class="lg:col-span-7 space-y-4">
+                <!-- 篩選與統計列 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-base font-bold text-slate-800">每日運動綜整看板</h2>
-                        <p class="text-xs text-slate-500">同日項目自動併排顯示，支援單項獨立編輯與刪除</p>
+                        <h2 class="text-base sm:text-lg font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-check text-indigo-600"></i>
+                            <span>每日運動綜整看板</span>
+                        </h2>
+                        <p class="text-xs text-slate-500">同日多筆運動自動左右併排，支援單項獨立編輯與刪除</p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <label class="text-xs font-semibold text-slate-600">月份篩選：</label>
+                        <input type="month" id="filterMonthInput" onchange="renderDashboard()"
+                            class="w-36 sm:w-44 px-2.5 py-1.5 text-xs sm:text-sm bg-slate-50 rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <button type="button" onclick="clearMonthFilter()"
+                            class="px-2.5 py-1.5 h-[40px] text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+                            顯示全部
+                        </button>
                     </div>
                 </div>
 
-                <!-- 月份篩選器 -->
-                <div class="flex items-center gap-2 w-full sm:w-auto">
-                    <label class="text-xs font-semibold text-slate-600 whitespace-nowrap">月份：</label>
-                    <input type="month" id="filterMonth" onchange="renderDashboard()"
-                        class="flex-1 sm:w-40 px-3 py-2 text-xs sm:text-sm rounded-xl border border-slate-300 bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <button onclick="clearMonthFilter()" class="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition shrink-0" title="顯示全部日期">
-                        全部
-                    </button>
+                <!-- 統計摘要小卡 -->
+                <div class="grid grid-cols-3 gap-3">
+                    <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-400 block">紀錄天數</span>
+                        <span id="statTotalDays" class="text-lg sm:text-2xl font-extrabold text-slate-800">0 天</span>
+                    </div>
+                    <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-400 block">累積總時長</span>
+                        <span id="statTotalDuration" class="text-lg sm:text-2xl font-extrabold text-indigo-600">0min</span>
+                    </div>
+                    <div class="bg-white rounded-2xl p-3.5 border border-slate-200/80 shadow-sm">
+                        <span class="text-[11px] font-semibold text-slate-400 block">累積重訓總量</span>
+                        <span id="statTotalVolume" class="text-lg sm:text-2xl font-extrabold text-emerald-600">0</span>
+                    </div>
                 </div>
-            </div>
 
-            <!-- 統計小卡 -->
-            <div class="grid grid-cols-3 gap-2.5 sm:gap-3">
-                <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs">
-                    <span class="text-[11px] font-medium text-slate-500 block">紀錄天數</span>
-                    <span id="statDays" class="text-base sm:text-xl font-extrabold text-slate-800 mt-0.5 block">0 天</span>
-                </div>
-                <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs">
-                    <span class="text-[11px] font-medium text-slate-500 block">累積總訓練量</span>
-                    <span id="statVolume" class="text-base sm:text-xl font-extrabold text-indigo-600 mt-0.5 block truncate">0</span>
-                </div>
-                <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200/90 shadow-xs">
-                    <span class="text-[11px] font-medium text-slate-500 block">累積跑步距離</span>
-                    <span id="statDistance" class="text-base sm:text-xl font-extrabold text-emerald-600 mt-0.5 block truncate">0 km</span>
-                </div>
-            </div>
-
-            <!-- 每日綜整卡片列表 -->
-            <div id="dailyCardsContainer" class="space-y-4 sm:space-y-5"></div>
-
-        </section>
+                <!-- 單日綜整卡片容器 -->
+                <div id="dailyCardsContainer" class="space-y-4"></div>
+            </section>
+        </div>
     </main>
 
-    <!-- 匯出與日期選擇 Modal -->
-    <div id="exportModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden items-center justify-center p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-2xl w-full overflow-hidden flex flex-col max-h-[90vh]">
-            <!-- Modal Header -->
-            <div class="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+    <!-- 匯出報表彈窗 (支援選擇整月或特定幾日，輸出 CSV / Word / PDF) -->
+    <div id="exportModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+            <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
                 <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-file-export text-emerald-400 text-lg"></i>
-                    <h3 class="font-bold text-base">匯出運動紀錄報表 (Google 試算表 / Word / PDF)</h3>
+                    <i class="fa-solid fa-file-export text-emerald-400"></i>
+                    <h3 class="text-base font-bold">一鍵匯出運動紀錄報表</h3>
                 </div>
-                <button onclick="closeExportModal()" class="text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
+                <button type="button" onclick="closeExportModal()" class="text-slate-400 hover:text-white text-lg px-2">
+                    <i class="fa-solid fa-xmark"></i>
                 </button>
             </div>
 
-            <!-- Modal Body -->
-            <div class="p-6 overflow-y-auto space-y-5 flex-1">
+            <div class="p-5 overflow-y-auto space-y-5 flex-1">
                 <!-- 步驟 1：選擇日期範圍模式 -->
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        1. 選擇要匯出的日期範圍
-                    </label>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
-                            <input type="radio" name="exportScope" value="month" checked onchange="toggleExportScope()" class="text-indigo-600 focus:ring-indigo-500">
-                            <div>
-                                <span class="text-sm font-bold text-slate-800 block">依整個月匯出</span>
-                                <span class="text-xs text-slate-500">一鍵選取指定月份的所有紀錄</span>
-                            </div>
-                        </label>
-                        <label class="flex items-center gap-3 p-3 rounded-xl border border-slate-200 cursor-pointer hover:bg-slate-50 transition">
-                            <input type="radio" name="exportScope" value="custom" onchange="toggleExportScope()" class="text-indigo-600 focus:ring-indigo-500">
-                            <div>
-                                <span class="text-sm font-bold text-slate-800 block">自由勾選某幾日</span>
-                                <span class="text-xs text-slate-500">手動勾選特定幾天進行匯出</span>
-                            </div>
-                        </label>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">1. 選擇要匯出的日期範圍</label>
+                    <div class="grid grid-cols-2 gap-2.5">
+                        <button type="button" id="exportModeMonthBtn" onclick="setExportRangeMode('month')"
+                            class="py-2.5 px-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center justify-center gap-2 transition">
+                            <i class="fa-regular fa-calendar"></i>
+                            <span>依整個月匯出</span>
+                        </button>
+                        <button type="button" id="exportModeCustomBtn" onclick="setExportRangeMode('custom')"
+                            class="py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>自由勾選某幾日</span>
+                        </button>
                     </div>
                 </div>
 
                 <!-- 整月選擇器 -->
-                <div id="exportMonthSelectorBox" class="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">選擇匯出月份：</label>
-                    <input type="month" id="exportMonthInput" onchange="updateExportPreviewCount()"
-                        class="w-full sm:w-64 px-3 py-2 text-sm bg-white rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-indigo-500">
+                <div id="exportMonthSelectorBox" class="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">選擇目標月份</label>
+                    <input type="month" id="exportMonthInput" onchange="updateExportPreview()"
+                        class="w-44 sm:w-56 px-3 py-2 text-sm bg-white rounded-xl border border-slate-300 outline-none">
                 </div>
 
-                <!-- 多日勾選清單 -->
-                <div id="exportCustomDatesBox" class="hidden bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2.5">
+                <!-- 自由勾選多日選擇器 -->
+                <div id="exportCustomDaysBox" class="hidden p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
                     <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold text-slate-700">勾選要匯出的日期：</span>
-                        <div class="space-x-2">
-                            <button type="button" onclick="selectAllExportDates(true)" class="text-xs text-indigo-600 hover:underline font-medium">全選</button>
+                        <label class="text-xs font-bold text-slate-700">勾選要匯出的日期</label>
+                        <div class="flex gap-2">
+                            <button type="button" onclick="toggleAllExportDates(true)" class="text-xs text-indigo-600 font-bold hover:underline">全選</button>
                             <span class="text-slate-300">|</span>
-                            <button type="button" onclick="selectAllExportDates(false)" class="text-xs text-slate-500 hover:underline font-medium">全不選</button>
+                            <button type="button" onclick="toggleAllExportDates(false)" class="text-xs text-slate-500 font-bold hover:underline">全不選</button>
                         </div>
                     </div>
-                    <div id="exportDateCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1"></div>
+                    <div id="exportDatesCheckboxList" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-48 overflow-y-auto p-1"></div>
                 </div>
 
-                <!-- 預覽統計 -->
-                <div class="flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-900 text-xs font-medium">
-                    <span>目前已選取匯出天數：</span>
-                    <span id="exportSelectedCount" class="font-bold text-sm text-indigo-700">0 天</span>
-                </div>
-
-                <!-- 步驟 2：選擇匯出格式 -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                        2. 選擇一鍵儲存格式
-                    </label>
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <!-- CSV (Google 試算表) -->
-                        <button type="button" onclick="exportToVisualCSV()"
-                            class="p-4 rounded-xl border-2 border-emerald-600 bg-emerald-50/60 hover:bg-emerald-100/70 text-left transition flex flex-col justify-between group">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="w-9 h-9 rounded-lg bg-emerald-600 text-white flex items-center justify-center">
-                                    <i class="fa-solid fa-table"></i>
-                                </span>
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">推薦</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-sm text-slate-900 group-hover:text-emerald-800">Google 試算表 (.csv)</h4>
-                                <p class="text-[11px] text-slate-600 mt-1">保留左右併排視覺排版，可直接匯入 Google 試算表或 Excel</p>
-                            </div>
-                        </button>
-
-                        <!-- Word (.doc) -->
-                        <button type="button" onclick="exportToWord()"
-                            class="p-4 rounded-xl border-2 border-blue-600 bg-blue-50/60 hover:bg-blue-100/70 text-left transition flex flex-col justify-between group">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="w-9 h-9 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-                                    <i class="fa-solid fa-file-word"></i>
-                                </span>
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-200 text-blue-900">完整排版</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-sm text-slate-900 group-hover:text-blue-800">Word 文件 (.doc)</h4>
-                                <p class="text-[11px] text-slate-600 mt-1">產生具備精美表格框線與色彩的 Word 運動日誌檔案</p>
-                            </div>
-                        </button>
-
-                        <!-- PDF / 列印 -->
-                        <button type="button" onclick="exportToPDF()"
-                            class="p-4 rounded-xl border-2 border-rose-600 bg-rose-50/60 hover:bg-rose-100/70 text-left transition flex flex-col justify-between group">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="w-9 h-9 rounded-lg bg-rose-600 text-white flex items-center justify-center">
-                                    <i class="fa-solid fa-file-pdf"></i>
-                                </span>
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-200 text-rose-900">高畫質</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-sm text-slate-900 group-hover:text-rose-800">儲存為 PDF 報表</h4>
-                                <p class="text-[11px] text-slate-600 mt-1">呼叫系統高品質排版列印，可一鍵另存為 PDF 電子檔</p>
-                            </div>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- 管理運動類別 Modal (支援編輯與刪除預設/自訂運動類型) -->
-    <div id="categoryManagerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden items-center justify-center p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh]">
-            <!-- Modal Header -->
-            <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                    <i class="fa-solid fa-sliders text-indigo-400"></i>
-                    <h3 class="font-bold text-base">管理運動類型 (預設與自訂)</h3>
-                </div>
-                <button type="button" onclick="closeCategoryManagerModal()" class="text-slate-400 hover:text-white transition">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
-
-            <!-- Modal Body -->
-            <div class="p-5 overflow-y-auto space-y-4 flex-1">
-                <p class="text-xs text-slate-500 leading-relaxed">
-                    您可自由<strong>修改名稱</strong>、切換<strong>欄位紀錄模式</strong>（重訓組數、跑步距離、一般備註）或<strong>刪除</strong>任何預設與自訂運動類型。
-                </p>
-
-                <!-- 運動類型清單 -->
-                <div id="categoryManagerList" class="space-y-2.5"></div>
-
-                <!-- 快速新增運動類型 -->
-                <div class="pt-3 border-t border-slate-200">
-                    <label class="block text-xs font-bold text-slate-700 mb-2">新增常用運動類型</label>
-                    <div class="flex flex-col sm:flex-row gap-2">
-                        <input type="text" id="newManagerCatName" placeholder="輸入運動名稱 (例：羽球、硬舉)"
-                            class="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-50 rounded-xl border border-slate-300 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                        <select id="newManagerCatMode" class="px-3 py-2 text-xs sm:text-sm bg-slate-50 rounded-xl border border-slate-300 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="note">一般備註模式</option>
-                            <option value="weight">重訓組數模式</option>
-                            <option value="run">跑步距離模式</option>
-                        </select>
-                        <button type="button" onclick="addCategoryFromManager()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shrink-0">
-                            新增
-                        </button>
+                <!-- 匯出預覽摘要 -->
+                <div class="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between">
+                    <div class="text-xs text-emerald-900">
+                        已選取 <strong id="exportSelectedDaysCount" class="text-sm font-extrabold">0</strong> 天，共包含 <strong id="exportSelectedSessionsCount" class="text-sm font-extrabold">0</strong> 筆運動項目
                     </div>
                 </div>
             </div>
 
-            <!-- Modal Footer -->
-            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
-                <button type="button" onclick="resetDefaultCategories()" class="text-xs text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1.5 transition">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span>恢復系統預設運動</span>
+            <!-- 底部三種匯出按鈕 -->
+            <div class="px-5 py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-end gap-2.5">
+                <button type="button" onclick="exportAsCSV()"
+                    class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-table"></i>
+                    <span>下載 Google 試算表 (.csv)</span>
                 </button>
-                <button type="button" onclick="closeCategoryManagerModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition">
-                    完成
+                <button type="button" onclick="exportAsWord()"
+                    class="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-file-word"></i>
+                    <span>下載 Word 報表 (.doc)</span>
+                </button>
+                <button type="button" onclick="exportAsPDF()"
+                    class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold flex items-center gap-2 shadow-sm transition">
+                    <i class="fa-solid fa-file-pdf"></i>
+                    <span>列印 / 存成 PDF</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 確認刪除 Modal (取代原生 confirm) -->
-    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
-        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
-            <div class="flex items-center gap-3 text-rose-600">
-                <div class="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center shrink-0">
-                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+    <!-- 列印 / PDF 專用隱藏區 -->
+    <div id="printReportArea" class="hidden print-only p-6"></div>
+
+    <!-- 自訂確認彈窗 (取代 window.confirm) -->
+    <div id="confirmModal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl border border-slate-200 space-y-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
                 </div>
                 <div>
-                    <h3 class="font-bold text-base text-slate-900" id="confirmModalTitle">確認刪除紀錄？</h3>
-                    <p class="text-xs text-slate-500" id="confirmModalDesc">此操作無法復原。</p>
+                    <h4 id="confirmModalTitle" class="text-sm font-bold text-slate-800">確認操作</h4>
+                    <p id="confirmModalMessage" class="text-xs text-slate-600 mt-0.5"></p>
                 </div>
             </div>
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button onclick="closeConfirmModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition">
+            <div class="flex justify-end gap-2 pt-2">
+                <button type="button" onclick="closeConfirmModal()"
+                    class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition">
                     取消
                 </button>
-                <button id="confirmModalActionBtn" class="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-500 rounded-xl transition">
-                    確認刪除
+                <button type="button" id="confirmModalOkBtn"
+                    class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition">
+                    確定執行
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 專供 PDF 列印使用的隱藏容器 -->
-    <div id="printReportContainer" class="hidden print-only p-8 max-w-5xl mx-auto"></div>
+    <!-- Toast 通知容器 -->
+    <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 no-print"></div>
 
     <script>
-        /**************************************************************
-         * 1. 全域狀態與 LocalStorage 資料模型
-         **************************************************************/
-        const STORAGE_KEY = 'WORKOUT_LOGGER_SESSIONS_V1';
-        const FAVORITE_CATS_KEY = 'WORKOUT_LOGGER_FAV_CATS_V1';
-        const ALL_CATS_KEY = 'WORKOUT_LOGGER_ALL_CATS_V2';
+        // ==========================================
+        // LocalStorage Keys 與全域狀態
+        // ==========================================
+        const STORAGE_KEY = 'daily_workout_sessions_v2';
+        const CATEGORIES_KEY = 'daily_workout_categories_v2';
 
-        const DEFAULT_CATEGORIES = [
-            { id: 'cat_weight', name: '重訓', icon: 'fa-dumbbell', mode: 'weight', isDefault: true },
-            { id: 'cat_run', name: '跑步', icon: 'fa-person-running', mode: 'run', isDefault: true },
-            { id: 'cat_bodyweight', name: '徒手訓練', icon: 'fa-person-harassing', mode: 'note', isDefault: true }
+        // 系統預設運動類型（不包含桌球，使用者可自由編輯名稱、切換模式或刪除）
+        const SYSTEM_DEFAULT_CATEGORIES = [
+            { id: 'cat_weight', name: '重訓', mode: 'weight', icon: 'fa-dumbbell', isDefault: true },
+            { id: 'cat_run', name: '跑步', mode: 'run', icon: 'fa-person-running', isDefault: true },
+            { id: 'cat_bodyweight', name: '徒手訓練', mode: 'note', icon: 'fa-child-reaching', isDefault: true }
         ];
 
-        let sessions = []; // 儲存所有獨立運動項目 (Session)
-        let categories = []; // 統一管理所有預設與自訂運動類型
+        let sessions = [];
+        let categories = [];
         let currentCategory = '重訓';
+        let exportRangeMode = 'month'; // 'month' | 'custom'
+        let confirmCallback = null;
 
-        // 初始化應用程式
-        window.addEventListener('DOMContentLoaded', () => {
-            loadFromStorage();
-            loadCategories();
+        // ==========================================
+        // 工具函式
+        // ==========================================
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
 
-            // 預設日期設為今日
-            const today = new Date().toISOString().slice(0, 10);
-            document.getElementById('workoutDate').value = today;
-            document.getElementById('exportMonthInput').value = today.slice(0, 7);
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            const colorMap = {
+                success: 'bg-slate-900 text-white border-emerald-500',
+                warning: 'bg-amber-600 text-white border-amber-300',
+                error: 'bg-rose-600 text-white border-rose-300'
+            };
+            toast.className = `px-4 py-3 rounded-xl shadow-lg border-l-4 text-xs font-bold flex items-center gap-2.5 transition-all duration-300 ${colorMap[type] || colorMap.success}`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info"></i><span>${escapeHtml(message)}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 2600);
+        }
 
-            renderCategoryButtons();
-            const firstCat = categories.length > 0 ? categories[0].name : '其他';
-            selectCategory(firstCat);
-            resetExerciseBlocks();
-            renderDashboard();
+        function openConfirmModal(title, message, onConfirm) {
+            document.getElementById('confirmModalTitle').textContent = title;
+            document.getElementById('confirmModalMessage').textContent = message;
+            confirmCallback = onConfirm;
+            document.getElementById('confirmModal').classList.remove('hidden');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden');
+            confirmCallback = null;
+        }
+
+        document.getElementById('confirmModalOkBtn').addEventListener('click', () => {
+            if (typeof confirmCallback === 'function') {
+                confirmCallback();
+            }
+            closeConfirmModal();
         });
 
+        // 格式化時長：例如 1hr、2hr15min、45min
+        function formatDuration(hours, minutes) {
+            const h = parseInt(hours, 10) || 0;
+            const m = parseInt(minutes, 10) || 0;
+            if (h > 0 && m > 0) return `${h}hr${m}min`;
+            if (h > 0) return `${h}hr`;
+            return `${m}min`;
+        }
+
+        // 格式化日期：2026-11-01 -> 2026/11/1
+        function formatDisplayDate(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            if (parts.length !== 3) return isoDate;
+            return `${parts[0]}/${parseInt(parts[1], 10)}/${parseInt(parts[2], 10)}`;
+        }
+
+        // 計算單組訓練量：有填重量 = 重量 * 次數 * 組數；沒填重量 = 次數 * 組數
+        function calcSetVolume(weight, reps, sets) {
+            const r = parseFloat(reps) || 0;
+            const s = parseFloat(sets) || 0;
+            const hasWeight = weight !== '' && weight !== null && weight !== undefined && !isNaN(parseFloat(weight)) && parseFloat(weight) > 0;
+            if (hasWeight) {
+                return parseFloat(weight) * r * s;
+            }
+            return r * s;
+        }
+
+        // 方案 A 顯示格式：有重量顯示「60kg * 10次 * 5組」，無重量顯示「10次 * 5組」
+        function formatSetString(weight, reps, sets) {
+            const r = parseInt(reps, 10) || 0;
+            const s = parseInt(sets, 10) || 0;
+            const hasWeight = weight !== '' && weight !== null && weight !== undefined && !isNaN(parseFloat(weight)) && parseFloat(weight) > 0;
+            if (hasWeight) {
+                return `${parseFloat(weight)}kg * ${r}次 * ${s}組`;
+            }
+            return `${r}次 * ${s}組`;
+        }
+
+        // ==========================================
+        // LocalStorage 讀取與儲存
+        // ==========================================
         function loadFromStorage() {
             try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                const parsed = raw ? JSON.parse(raw) : [];
-                sessions = parsed.filter(s => s.id !== 'demo_20261101_weight' && s.id !== 'demo_20261101_run');
+                const rawSessions = localStorage.getItem(STORAGE_KEY);
+                sessions = rawSessions ? JSON.parse(rawSessions) : [];
+                if (!Array.isArray(sessions)) sessions = [];
             } catch (e) {
-                console.error('讀取 LocalStorage 失敗:', e);
                 sessions = [];
+            }
+
+            try {
+                const rawCats = localStorage.getItem(CATEGORIES_KEY);
+                if (rawCats) {
+                    const parsed = JSON.parse(rawCats);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        categories = parsed;
+                    } else {
+                        categories = JSON.parse(JSON.stringify(SYSTEM_DEFAULT_CATEGORIES));
+                    }
+                } else {
+                    categories = JSON.parse(JSON.stringify(SYSTEM_DEFAULT_CATEGORIES));
+                }
+            } catch (e) {
+                categories = JSON.parse(JSON.stringify(SYSTEM_DEFAULT_CATEGORIES));
             }
         }
 
         function saveToStorage() {
-            try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
-            } catch (e) {
-                showToast('儲存失敗，請檢查瀏覽器儲存空間設定', 'error');
-            }
-        }
-
-        // 載入運動類型清單（自動相容並遷移舊版常用清單）
-        function loadCategories() {
-            try {
-                const raw = localStorage.getItem(ALL_CATS_KEY);
-                if (raw) {
-                    categories = JSON.parse(raw);
-                } else {
-                    const oldFavRaw = localStorage.getItem(FAVORITE_CATS_KEY);
-                    const oldFavs = oldFavRaw ? JSON.parse(oldFavRaw) : [];
-                    categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-                    oldFavs.forEach(name => {
-                        if (!categories.some(c => c.name === name)) {
-                            categories.push({
-                                id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                                name,
-                                icon: 'fa-star',
-                                mode: 'note',
-                                isDefault: false
-                            });
-                        }
-                    });
-                    saveCategories();
-                }
-            } catch (e) {
-                categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
-            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(sessions));
         }
 
         function saveCategories() {
-            try {
-                localStorage.setItem(ALL_CATS_KEY, JSON.stringify(categories));
-            } catch (e) {
-                console.error('儲存運動類型失敗:', e);
-            }
+            localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
         }
 
-        // 判斷某個運動類別對應的表單模式 ('weight' | 'run' | 'note')
-        function getCategoryMode(catName) {
-            const found = categories.find(c => c.name === catName);
-            if (found && found.mode) return found.mode;
-            if (catName === '重訓') return 'weight';
-            if (catName === '跑步') return 'run';
-            return 'note';
+        // ==========================================
+        // 運動類別管理 (新增 / 編輯名稱與模式 / 刪除 / 恢復預設)
+        // ==========================================
+        function getCategoryMeta(catName) {
+            return categories.find(c => c.name === catName) || null;
         }
 
-        // 判斷單筆紀錄的輸入模式（優先讀取紀錄本身特徵，相容改名後的類別）
-        function getSessionMode(sess) {
-            if (sess.mode) return sess.mode;
-            if (Array.isArray(sess.exercises) && sess.exercises.length > 0) return 'weight';
-            if (sess.distance !== null && sess.distance !== undefined && sess.distance !== '') return 'run';
-            return getCategoryMode(sess.displayCategory || sess.category);
-        }
-
-        // 渲染運動類別按鈕（包含所有可編輯的預設與自訂類別 + 其他）
         function renderCategoryButtons() {
             const container = document.getElementById('categoryButtons');
             const catsHTML = categories.map(c => {
-                const iconColor = c.icon === 'fa-star' ? 'text-amber-400' : '';
+                const isSelected = currentCategory === c.name;
+                const activeClass = isSelected
+                    ? 'border-indigo-600 ring-2 ring-indigo-500/30 bg-indigo-50/60'
+                    : 'border-slate-200 bg-white hover:border-slate-300';
+                const btnTextClass = isSelected ? 'text-indigo-700 font-bold' : 'text-slate-700 font-semibold';
+                const iconColor = c.icon === 'fa-star' ? 'text-amber-500' : (isSelected ? 'text-indigo-600' : 'text-slate-500');
+
                 return `
-                    <div class="relative group min-h-[52px]">
+                    <div class="flex flex-col rounded-xl border ${activeClass} overflow-hidden shadow-2xs transition">
                         <button type="button" onclick="selectCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}"
-                            class="cat-btn w-full h-full py-2 px-2 text-xs font-semibold rounded-xl border text-center transition flex flex-col items-center justify-center gap-1">
+                            class="w-full min-h-[50px] py-2 px-2 text-xs ${btnTextClass} text-center transition flex flex-col items-center justify-center gap-1">
                             <i class="fa-solid ${escapeHtml(c.icon || 'fa-dumbbell')} ${iconColor} text-sm"></i>
                             <span class="truncate max-w-full">${escapeHtml(c.name)}</span>
                         </button>
-                        <button type="button" onclick="removeCategoryQuick(event, '${escapeHtml(c.id)}')"
-                            class="opacity-0 group-hover:opacity-100 focus:opacity-100 absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-rose-500 text-slate-700 hover:text-white text-[10px] flex items-center justify-center shadow-xs transition z-10"
-                            title="刪除「${escapeHtml(c.name)}」">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+                        <div class="grid grid-cols-2 border-t border-slate-200/70 bg-slate-50 text-[11px] divide-x divide-slate-200/70">
+                            <button type="button" onclick="openInlineEditForCategory(event, '${escapeHtml(c.id)}')"
+                                class="py-1 text-slate-600 hover:text-indigo-600 hover:bg-indigo-50 font-medium transition flex items-center justify-center gap-1"
+                                title="編輯「${escapeHtml(c.name)}」">
+                                <i class="fa-solid fa-pen text-[10px]"></i>
+                                <span>編輯</span>
+                            </button>
+                            <button type="button" onclick="removeCategoryQuick(event, '${escapeHtml(c.id)}')"
+                                class="py-1 text-slate-600 hover:text-rose-600 hover:bg-rose-50 font-medium transition flex items-center justify-center gap-1"
+                                title="刪除「${escapeHtml(c.name)}」">
+                                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                <span>刪除</span>
+                            </button>
+                        </div>
                     </div>
                 `;
             }).join('');
 
+            const isOtherSelected = currentCategory === '其他';
+            const otherActiveClass = isOtherSelected
+                ? 'border-indigo-600 ring-2 ring-indigo-500/30 bg-indigo-50/60 text-indigo-700 font-bold'
+                : 'border-slate-200 bg-white text-slate-700 font-semibold hover:border-slate-300';
+
             const otherHTML = `
-                <button type="button" onclick="selectCategory('其他')" data-cat="其他"
-                    class="cat-btn min-h-[52px] py-2 px-2 text-xs font-semibold rounded-xl border text-center transition flex flex-col items-center justify-center gap-1">
-                    <i class="fa-solid fa-plus-circle text-sm"></i>
-                    <span>其他 (自訂)</span>
-                </button>
+                <div class="flex flex-col rounded-xl border ${otherActiveClass} overflow-hidden shadow-2xs transition">
+                    <button type="button" onclick="selectCategory('其他')" data-cat="其他"
+                        class="w-full h-full min-h-[74px] py-2 px-2 text-xs text-center transition flex flex-col items-center justify-center gap-1">
+                        <i class="fa-solid fa-plus-circle text-sm ${isOtherSelected ? 'text-indigo-600' : 'text-slate-500'}"></i>
+                        <span>其他 (自訂)</span>
+                    </button>
+                </div>
             `;
 
             container.innerHTML = catsHTML + otherHTML;
+            renderInlineCategoryManagerList();
         }
 
-        // 立即將「其他」輸入框的運動名稱加入常用清單並切換過去
-        function addCustomToFavoritesNow() {
-            const input = document.getElementById('customCategoryName');
-            const name = input.value.trim();
-            if (!name) {
-                showToast('請先輸入自訂運動名稱', 'warning');
-                input.focus();
+        function selectCategory(catName) {
+            currentCategory = catName;
+            renderCategoryButtons();
+
+            const customBox = document.getElementById('customCategoryBox');
+            const weightSec = document.getElementById('weightTrainingSection');
+            const runSec = document.getElementById('runningSection');
+            const noteSec = document.getElementById('noteSection');
+
+            customBox.classList.add('hidden');
+            weightSec.classList.add('hidden');
+            runSec.classList.add('hidden');
+            noteSec.classList.add('hidden');
+
+            if (catName === '其他') {
+                customBox.classList.remove('hidden');
+                noteSec.classList.remove('hidden');
                 return;
             }
-            addFavoriteCategoryByName(name, 'note');
-            input.value = '';
-            document.getElementById('saveAsFavoriteCheckbox').checked = false;
-            selectCategory(name);
-        }
 
-        function addFavoriteCategoryByName(name, mode = 'note') {
-            if (name === '其他' || categories.some(c => c.name === name)) {
-                showToast(`「${name}」已經在運動類別清單中了`, 'info');
-                return false;
-            }
-            const iconMap = { weight: 'fa-dumbbell', run: 'fa-person-running', note: 'fa-star' };
-            categories.push({
-                id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-                name,
-                icon: iconMap[mode] || 'fa-star',
-                mode,
-                isDefault: false
-            });
-            saveCategories();
-            renderCategoryButtons();
-            showToast(`已將「${name}」加入常用運動清單！`, 'success');
-            return true;
-        }
+            const meta = getCategoryMeta(catName);
+            const mode = meta ? meta.mode : 'note';
 
-        // 快速從主畫面右上角 x 刪除運動類別
-        function removeCategoryQuick(e, catId) {
-            e.stopPropagation();
-            const target = categories.find(c => c.id === catId);
-            if (!target) return;
-            openConfirmModal(
-                `刪除「${target.name}」類型？`,
-                `確定要從運動類別清單中移除「${target.name}」嗎？（已儲存的歷史運動紀錄不會被刪除）`,
-                () => {
-                    categories = categories.filter(c => c.id !== catId);
-                    saveCategories();
-                    if (currentCategory === target.name) {
-                        currentCategory = categories.length > 0 ? categories[0].name : '其他';
-                    }
-                    renderCategoryButtons();
-                    selectCategory(currentCategory);
-                    showToast(`已刪除運動類型「${target.name}」`, 'info');
+            if (mode === 'weight') {
+                weightSec.classList.remove('hidden');
+                if (document.getElementById('exerciseBlocksContainer').children.length === 0) {
+                    resetExerciseBlocks();
                 }
-            );
+            } else if (mode === 'run') {
+                runSec.classList.remove('hidden');
+            } else {
+                noteSec.classList.remove('hidden');
+            }
         }
 
-        /**************************************************************
-         * 1B. 管理運動類型 Modal (支援編輯名稱、切換模式、刪除、重置預設)
-         **************************************************************/
-        function openCategoryManagerModal() {
-            renderCategoryManagerList();
-            const modal = document.getElementById('categoryManagerModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        function toggleInlineCategoryManager(forceOpen = null) {
+            const box = document.getElementById('inlineCategoryManagerBox');
+            const btnText = document.getElementById('toggleCatManagerText');
+            const isHidden = box.classList.contains('hidden');
+            const shouldOpen = forceOpen !== null ? forceOpen : isHidden;
+
+            if (shouldOpen) {
+                renderInlineCategoryManagerList();
+                box.classList.remove('hidden');
+                btnText.textContent = '收合編輯面板';
+            } else {
+                box.classList.add('hidden');
+                btnText.textContent = '管理 / 編輯運動類型';
+            }
         }
 
-        function closeCategoryManagerModal() {
-            const modal = document.getElementById('categoryManagerModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+        function openInlineEditForCategory(e, catId) {
+            if (e) e.stopPropagation();
+            toggleInlineCategoryManager(true);
+            setTimeout(() => {
+                const input = document.getElementById(`inlineEditCatName_${catId}`);
+                if (input) {
+                    input.focus();
+                    input.select();
+                }
+            }, 60);
         }
 
-        function renderCategoryManagerList() {
-            const listEl = document.getElementById('categoryManagerList');
+        function renderInlineCategoryManagerList() {
+            const listEl = document.getElementById('inlineCategoryManagerList');
+            if (!listEl) return;
+
             if (categories.length === 0) {
-                listEl.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有常用運動類型，請從下方新增或點擊「恢復系統預設運動」。</div>`;
+                listEl.innerHTML = `
+                    <div class="p-3 text-center text-xs text-slate-500 bg-white rounded-xl border border-dashed border-slate-300">
+                        目前沒有任何常用運動類型，請點擊右上角「恢復預設運動」或從下方新增。
+                    </div>
+                `;
                 return;
             }
 
             listEl.innerHTML = categories.map(c => `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/90" data-id="${escapeHtml(c.id)}">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-white border border-slate-200 shadow-2xs">
                     <div class="flex items-center gap-2 flex-1">
-                        <span class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
-                            <i class="fa-solid ${escapeHtml(c.icon || 'fa-dumbbell')} ${c.icon === 'fa-star' ? 'text-amber-400' : ''}"></i>
+                        <span class="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0 text-xs">
+                            <i class="fa-solid ${escapeHtml(c.icon || 'fa-dumbbell')} ${c.icon === 'fa-star' ? 'text-amber-500' : ''}"></i>
                         </span>
-                        <input type="text" value="${escapeHtml(c.name)}" id="editCatName_${escapeHtml(c.id)}"
-                            class="w-full px-2.5 py-1.5 text-xs sm:text-sm font-bold text-slate-800 bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
-                            placeholder="運動名稱">
+                        <input type="text" value="${escapeHtml(c.name)}" id="inlineEditCatName_${escapeHtml(c.id)}"
+                            class="w-full px-2.5 py-1.5 text-xs sm:text-sm font-bold text-slate-800 bg-slate-50 focus:bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="輸入運動名稱">
                     </div>
-                    <div class="flex items-center gap-2 justify-end">
-                        <select id="editCatMode_${escapeHtml(c.id)}"
-                            class="px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                            <option value="weight" ${c.mode === 'weight' ? 'selected' : ''}>重訓組數模式</option>
-                            <option value="run" ${c.mode === 'run' ? 'selected' : ''}>跑步距離模式</option>
-                            <option value="note" ${(!c.mode || c.mode === 'note') ? 'selected' : ''}>一般備註模式</option>
+                    <div class="flex items-center gap-1.5 justify-end">
+                        <select id="inlineEditCatMode_${escapeHtml(c.id)}"
+                            class="px-2 py-1.5 text-xs font-medium text-slate-700 bg-slate-50 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="weight" ${c.mode === 'weight' ? 'selected' : ''}>重訓組數</option>
+                            <option value="run" ${c.mode === 'run' ? 'selected' : ''}>跑步距離</option>
+                            <option value="note" ${(!c.mode || c.mode === 'note') ? 'selected' : ''}>一般備註</option>
                         </select>
-                        <button type="button" onclick="saveCategoryEdit('${escapeHtml(c.id)}')"
-                            class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shrink-0">
+                        <button type="button" onclick="saveInlineCategoryEdit('${escapeHtml(c.id)}')"
+                            class="px-2.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition shrink-0">
                             儲存
                         </button>
-                        <button type="button" onclick="deleteCategoryInManager('${escapeHtml(c.id)}')"
-                            class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 flex items-center justify-center transition shrink-0"
-                            title="刪除此運動類型">
-                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        <button type="button" onclick="deleteCategoryById('${escapeHtml(c.id)}')"
+                            class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white text-xs font-bold flex items-center gap-1 transition shrink-0">
+                            <i class="fa-solid fa-trash-can"></i>
+                            <span>刪除</span>
                         </button>
                     </div>
                 </div>
             `).join('');
         }
 
-        function saveCategoryEdit(catId) {
+        function saveInlineCategoryEdit(catId) {
             const target = categories.find(c => c.id === catId);
             if (!target) return;
 
-            const nameInput = document.getElementById(`editCatName_${catId}`);
-            const modeSelect = document.getElementById(`editCatMode_${catId}`);
+            const nameInput = document.getElementById(`inlineEditCatName_${catId}`);
+            const modeSelect = document.getElementById(`inlineEditCatMode_${catId}`);
             const newName = nameInput.value.trim();
             const newMode = modeSelect.value;
 
@@ -771,7 +766,7 @@
                 target.icon = iconMap[newMode] || 'fa-star';
             }
 
-            // 同步更新歷史紀錄中相同名稱的運動顯示名稱與模式
+            // 同步更新歷史紀錄中的名稱
             sessions.forEach(s => {
                 if (s.displayCategory === oldName || s.category === oldName) {
                     s.displayCategory = newName;
@@ -789,1036 +784,839 @@
             renderCategoryButtons();
             selectCategory(currentCategory);
             renderDashboard();
-            renderCategoryManagerList();
-            showToast(`已更新運動類型「${newName}」`, 'success');
+            showToast(`已將運動類型更新為「${newName}」！`, 'success');
         }
 
-        function deleteCategoryInManager(catId) {
+        function removeCategoryQuick(e, catId) {
+            if (e) e.stopPropagation();
+            deleteCategoryById(catId);
+        }
+
+        function deleteCategoryById(catId) {
             const target = categories.find(c => c.id === catId);
             if (!target) return;
 
-            categories = categories.filter(c => c.id !== catId);
-            saveCategories();
-
-            if (currentCategory === target.name) {
-                currentCategory = categories.length > 0 ? categories[0].name : '其他';
-            }
-
-            renderCategoryButtons();
-            selectCategory(currentCategory);
-            renderCategoryManagerList();
-            showToast(`已刪除「${target.name}」`, 'info');
-        }
-
-        function addCategoryFromManager() {
-            const nameInput = document.getElementById('newManagerCatName');
-            const modeSelect = document.getElementById('newManagerCatMode');
-            const name = nameInput.value.trim();
-            const mode = modeSelect.value;
-
-            if (!name) {
-                showToast('請輸入要新增的運動名稱', 'warning');
-                nameInput.focus();
-                return;
-            }
-
-            const added = addFavoriteCategoryByName(name, mode);
-            if (added) {
-                nameInput.value = '';
-                selectCategory(name);
-                renderCategoryManagerList();
-            }
+            openConfirmModal(
+                `刪除運動類型「${target.name}」`,
+                `確定要從清單移除「${target.name}」嗎？（已儲存的歷史運動紀錄不會被刪除）`,
+                () => {
+                    categories = categories.filter(c => c.id !== catId);
+                    saveCategories();
+                    if (currentCategory === target.name) {
+                        currentCategory = categories.length > 0 ? categories[0].name : '其他';
+                    }
+                    renderCategoryButtons();
+                    selectCategory(currentCategory);
+                    showToast(`已刪除運動類型「${target.name}」`, 'success');
+                }
+            );
         }
 
         function resetDefaultCategories() {
-            DEFAULT_CATEGORIES.forEach(def => {
-                const existing = categories.find(c => c.id === def.id || c.name === def.name);
-                if (!existing) {
-                    categories.unshift(JSON.parse(JSON.stringify(def)));
-                } else {
-                    existing.mode = def.mode;
-                    existing.icon = def.icon;
+            SYSTEM_DEFAULT_CATEGORIES.forEach(def => {
+                const exists = categories.some(c => c.name === def.name);
+                if (!exists) {
+                    categories.unshift({ ...def, id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) });
                 }
             });
             saveCategories();
             renderCategoryButtons();
             selectCategory(categories[0].name);
-            renderCategoryManagerList();
-            showToast('已恢復系統預設運動類型！', 'success');
+            showToast('已恢復系統預設運動類型（重訓、跑步、徒手訓練）', 'success');
         }
 
-        /**************************************************************
-         * 2. 訓練量與時長格式化輔助函式
-         **************************************************************/
-        // 計算單一組數 (Set) 的訓練量：有填重量 -> 重量*次數*組數；未填重量 -> 次數*組數
-        function calcSetVolume(weight, reps, setsCount) {
-            const r = Number(reps) || 0;
-            const s = Number(setsCount) || 0;
-            const hasWeight = weight !== '' && weight !== null && weight !== undefined && Number(weight) > 0;
-            if (hasWeight) {
-                return Number(weight) * r * s;
+        function addFavoriteCategoryByName(name, mode = 'note') {
+            const clean = name.trim();
+            if (!clean) return false;
+            if (clean === '其他' || categories.some(c => c.name === clean)) {
+                showToast(`「${clean}」已經在常用運動清單中了`, 'warning');
+                return false;
             }
-            return r * s;
-        }
-
-        // 方案 A：明確標示單位字串 (例如 60kg * 10次 * 5組 或 10次 * 5組)
-        function formatSetString(weight, reps, setsCount) {
-            const hasWeight = weight !== '' && weight !== null && weight !== undefined && Number(weight) > 0;
-            if (hasWeight) {
-                return `${Number(weight)}kg * ${Number(reps)}次 * ${Number(setsCount)}組`;
-            }
-            return `${Number(reps)}次 * ${Number(setsCount)}組`;
-        }
-
-        // 計算單筆重訓 Session 的總訓練量
-        function calcSessionVolume(session) {
-            if (getSessionMode(session) !== 'weight' || !Array.isArray(session.exercises)) return 0;
-            let total = 0;
-            session.exercises.forEach(ex => {
-                (ex.sets || []).forEach(st => {
-                    total += calcSetVolume(st.weight, st.reps, st.sets);
-                });
+            const iconMap = { weight: 'fa-dumbbell', run: 'fa-person-running', note: 'fa-star' };
+            categories.push({
+                id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name: clean,
+                mode: mode,
+                icon: iconMap[mode] || 'fa-star',
+                isDefault: false
             });
-            return total;
+            saveCategories();
+            renderCategoryButtons();
+            showToast(`已將「${clean}」加入常用運動清單！`, 'success');
+            return true;
         }
 
-        // 格式化時長顯示 (例如: 1hr、2hr15min、45min)
-        function formatDuration(hours, minutes) {
-            const h = Number(hours) || 0;
-            const m = Number(minutes) || 0;
-            if (h > 0 && m > 0) return `${h}hr${m}min`;
-            if (h > 0) return `${h}hr`;
-            if (m > 0) return `${m}min`;
-            return `0min`;
-        }
+        function addCategoryFromInline() {
+            const nameInput = document.getElementById('inlineNewCatName');
+            const modeSelect = document.getElementById('inlineNewCatMode');
+            const name = nameInput.value.trim();
+            const mode = modeSelect.value;
 
-        // 將 YYYY-MM-DD 轉為 YYYY/M/D (如 2026/11/1)
-        function formatDisplayDate(isoDate) {
-            if (!isoDate) return '';
-            const parts = isoDate.split('-');
-            if (parts.length !== 3) return isoDate;
-            return `${parts[0]}/${Number(parts[1])}/${Number(parts[2])}`;
-        }
-
-        /**************************************************************
-         * 3. 表單互動與重訓動態動作/組數控制
-         **************************************************************/
-        function selectCategory(cat) {
-            currentCategory = cat;
-            document.querySelectorAll('.cat-btn').forEach(btn => {
-                if (btn.dataset.cat === cat) {
-                    btn.className = 'cat-btn w-full h-full min-h-[52px] py-2 px-2 text-xs font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-center transition flex flex-col items-center justify-center gap-1 shadow-xs';
-                } else {
-                    btn.className = 'cat-btn w-full h-full min-h-[52px] py-2 px-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-center transition flex flex-col items-center justify-center gap-1';
-                }
-            });
-
-            // 切換自訂名稱框
-            const customBox = document.getElementById('customCategoryBox');
-            const customInput = document.getElementById('customCategoryName');
-            if (cat === '其他') {
-                customBox.classList.remove('hidden');
-                customInput.required = true;
-            } else {
-                customBox.classList.add('hidden');
-                customInput.required = false;
+            if (!name) {
+                showToast('請先輸入要新增的運動名稱', 'warning');
+                nameInput.focus();
+                return;
             }
-
-            // 根據該運動類型的模式 ('weight' | 'run' | 'note') 切換對應輸入區塊
-            const mode = cat === '其他' ? 'note' : getCategoryMode(cat);
-            const weightSec = document.getElementById('weightTrainingSection');
-            const runSec = document.getElementById('runningSection');
-            const noteSec = document.getElementById('generalNoteSection');
-            const runDistInput = document.getElementById('runningDistance');
-
-            weightSec.classList.add('hidden');
-            runSec.classList.add('hidden');
-            noteSec.classList.add('hidden');
-            runDistInput.required = false;
-
-            if (mode === 'weight') {
-                weightSec.classList.remove('hidden');
-                updateLiveVolume();
-            } else if (mode === 'run') {
-                runSec.classList.remove('hidden');
-                runDistInput.required = true;
-            } else {
-                noteSec.classList.remove('hidden');
+            if (addFavoriteCategoryByName(name, mode)) {
+                nameInput.value = '';
+                selectCategory(name);
             }
         }
 
-        // 重置重訓動作區塊 (預設給一個空動作與一組)
+        function promoteCustomToFavorite() {
+            const input = document.getElementById('customCategoryInput');
+            const val = input.value.trim();
+            if (!val) {
+                showToast('請先輸入自訂運動名稱', 'warning');
+                input.focus();
+                return;
+            }
+            if (addFavoriteCategoryByName(val, 'note')) {
+                input.value = '';
+                selectCategory(val);
+            }
+        }
+
+        // ==========================================
+        // 重訓動態動作與組數管理
+        // ==========================================
         function resetExerciseBlocks() {
-            const container = document.getElementById('exercisesContainer');
+            const container = document.getElementById('exerciseBlocksContainer');
             container.innerHTML = '';
-            addExerciseBlock({ name: '', sets: [{ weight: '', reps: '', sets: '' }] });
-            updateLiveVolume();
+            addExerciseBlock();
+            updateLiveVolumePreview();
         }
 
-        // 新增一個重訓動作區塊 (Exercise) - 針對手機與電腦優化欄位觸控空間
-        function addExerciseBlock(exData = { name: '', sets: [{ weight: '', reps: '', sets: '' }] }) {
-            const container = document.getElementById('exercisesContainer');
-            const exDiv = document.createElement('div');
-            exDiv.className = 'exercise-block p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5';
+        function addExerciseBlock(exerciseData = null) {
+            const container = document.getElementById('exerciseBlocksContainer');
+            const block = document.createElement('div');
+            block.className = 'exercise-block p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5';
 
-            exDiv.innerHTML = `
+            const exName = exerciseData ? exerciseData.name : '';
+            block.innerHTML = `
                 <div class="flex items-center justify-between gap-2">
-                    <div class="flex items-center gap-2 flex-1">
-                        <span class="px-2 py-1 rounded-md bg-indigo-100 text-indigo-700 text-[11px] font-bold shrink-0">動作</span>
-                        <input type="text" placeholder="動作名稱 (例：squat、滑輪下拉)" value="${escapeHtml(exData.name || '')}"
-                            class="exercise-name-input w-full px-3 py-2 text-xs sm:text-sm font-semibold bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    </div>
-                    <button type="button" onclick="removeExerciseBlock(this)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition shrink-0" title="刪除此動作">
-                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    <input type="text" placeholder="動作名稱 (例如：squat、滑輪下拉)" value="${escapeHtml(exName)}"
+                        class="exercise-name-input flex-1 px-3 py-2 text-xs sm:text-sm font-bold bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <button type="button" onclick="removeExerciseBlock(this)"
+                        class="px-2.5 py-2 text-xs font-bold text-slate-400 hover:text-rose-600 rounded-lg transition" title="刪除此動作">
+                        <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </div>
-                <div class="grid grid-cols-12 gap-1.5 px-1 text-[11px] font-semibold text-slate-500">
-                    <div class="col-span-4">重量 (選填)</div>
-                    <div class="col-span-3">次數 *</div>
-                    <div class="col-span-3">組數 *</div>
-                    <div class="col-span-2 text-right">訓練量</div>
+                <div class="grid grid-cols-12 gap-1.5 text-[11px] font-bold text-slate-500 px-1">
+                    <div class="col-span-4">重量 kg (選填)</div>
+                    <div class="col-span-3">次數 <span class="text-rose-500">*</span></div>
+                    <div class="col-span-3">組數 <span class="text-rose-500">*</span></div>
+                    <div class="col-span-2 text-right">操作</div>
                 </div>
-                <div class="sets-list space-y-2"></div>
-                <div class="pt-1">
-                    <button type="button" onclick="addSetRow(this)" class="py-1.5 px-2.5 rounded-lg text-xs font-bold text-indigo-600 hover:bg-indigo-100/70 transition flex items-center gap-1.5">
-                        <i class="fa-solid fa-circle-plus"></i>
-                        <span>新增組數 (不同重量 / 次數)</span>
-                    </button>
-                </div>
+                <div class="sets-container space-y-2"></div>
+                <button type="button" onclick="addSetRow(this)"
+                    class="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 pt-1">
+                    <i class="fa-solid fa-plus-circle"></i>
+                    <span>新增一組不同重量/次數</span>
+                </button>
             `;
 
-            container.appendChild(exDiv);
-            const addBtn = exDiv.querySelector('button[onclick="addSetRow(this)"]');
-            const setsToRender = (exData.sets && exData.sets.length > 0) ? exData.sets : [{ weight: '', reps: '', sets: '' }];
-            setsToRender.forEach(st => addSetRow(addBtn, st));
-            updateLiveVolume();
+            container.appendChild(block);
+            const setsContainer = block.querySelector('.sets-container');
+
+            if (exerciseData && Array.isArray(exerciseData.sets) && exerciseData.sets.length > 0) {
+                exerciseData.sets.forEach(s => appendSetElement(setsContainer, s));
+            } else {
+                appendSetElement(setsContainer);
+            }
+            updateLiveVolumePreview();
         }
 
         function removeExerciseBlock(btn) {
-            const container = document.getElementById('exercisesContainer');
-            if (container.querySelectorAll('.exercise-block').length <= 1) {
-                showToast('重訓至少需保留一個動作項目', 'warning');
+            const container = document.getElementById('exerciseBlocksContainer');
+            if (container.children.length <= 1) {
+                showToast('至少需保留一個重訓動作區塊', 'warning');
                 return;
             }
             btn.closest('.exercise-block').remove();
-            updateLiveVolume();
+            updateLiveVolumePreview();
         }
 
-        // 在特定動作下新增一列組數 (重量[選填]、次數、組數)
-        function addSetRow(btn, setData = { weight: '', reps: '', sets: '' }) {
-            const exBlock = btn.closest('.exercise-block');
-            const setsList = exBlock.querySelector('.sets-list');
+        function addSetRow(btn) {
+            const setsContainer = btn.closest('.exercise-block').querySelector('.sets-container');
+            appendSetElement(setsContainer);
+            updateLiveVolumePreview();
+        }
+
+        function appendSetElement(setsContainer, setData = null) {
             const row = document.createElement('div');
             row.className = 'set-row grid grid-cols-12 gap-1.5 items-center';
-
-            const wVal = setData.weight !== undefined && setData.weight !== null ? setData.weight : '';
-            const rVal = setData.reps !== undefined && setData.reps !== null ? setData.reps : '';
-            const sVal = setData.sets !== undefined && setData.sets !== null ? setData.sets : '';
+            const w = setData && setData.weight !== null && setData.weight !== undefined ? setData.weight : '';
+            const r = setData && setData.reps !== undefined ? setData.reps : '';
+            const s = setData && setData.sets !== undefined ? setData.sets : 1;
 
             row.innerHTML = `
-                <div class="col-span-4 relative">
-                    <input type="number" step="0.5" min="0" placeholder="自體重" value="${wVal}" oninput="updateLiveVolume()"
-                        class="set-weight w-full pl-2.5 pr-6 py-2 text-xs sm:text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <span class="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">kg</span>
+                <div class="col-span-4">
+                    <input type="number" step="0.5" min="0" placeholder="徒手免填" value="${escapeHtml(w)}"
+                        oninput="updateLiveVolumePreview()"
+                        class="set-weight w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-                <div class="col-span-3 relative">
-                    <input type="number" min="1" placeholder="10" value="${rVal}" oninput="updateLiveVolume()"
-                        class="set-reps w-full pl-2.5 pr-5 py-2 text-xs sm:text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">次</span>
+                <div class="col-span-3">
+                    <input type="number" min="1" placeholder="次數" value="${escapeHtml(r)}"
+                        oninput="updateLiveVolumePreview()"
+                        class="set-reps w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-                <div class="col-span-3 relative">
-                    <input type="number" min="1" placeholder="5" value="${sVal}" oninput="updateLiveVolume()"
-                        class="set-count w-full pl-2.5 pr-5 py-2 text-xs sm:text-sm bg-white rounded-xl border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
-                    <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400 pointer-events-none">組</span>
+                <div class="col-span-3">
+                    <input type="number" min="1" placeholder="組數" value="${escapeHtml(s)}"
+                        oninput="updateLiveVolumePreview()"
+                        class="set-sets w-full px-2.5 py-1.5 text-xs sm:text-sm bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
                 </div>
-                <div class="col-span-2 flex items-center justify-end gap-1">
-                    <span class="set-vol-preview text-[11px] font-bold text-indigo-600 truncate" title="單組訓練量">0</span>
-                    <button type="button" onclick="removeSetRow(this)" class="w-6 h-6 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 flex items-center justify-center shrink-0">
-                        <i class="fa-solid fa-xmark text-xs"></i>
+                <div class="col-span-2 flex justify-end">
+                    <button type="button" onclick="removeSetRow(this)"
+                        class="w-7 h-7 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 flex items-center justify-center transition">
+                        <i class="fa-solid fa-xmark"></i>
                     </button>
                 </div>
             `;
-            setsList.appendChild(row);
-            updateLiveVolume();
+            setsContainer.appendChild(row);
         }
 
         function removeSetRow(btn) {
-            const setsList = btn.closest('.sets-list');
-            if (setsList.querySelectorAll('.set-row').length <= 1) {
-                showToast('每個動作至少需保留一筆組數', 'warning');
+            const setsContainer = btn.closest('.sets-container');
+            if (setsContainer.children.length <= 1) {
+                showToast('每個動作至少需保留一組紀錄', 'warning');
                 return;
             }
             btn.closest('.set-row').remove();
-            updateLiveVolume();
+            updateLiveVolumePreview();
         }
 
-        // 即時試算表單中的重訓總訓練量
-        function updateLiveVolume() {
-            let totalVol = 0;
-            document.querySelectorAll('#exercisesContainer .exercise-block').forEach(block => {
+        function updateLiveVolumePreview() {
+            let total = 0;
+            document.querySelectorAll('#exerciseBlocksContainer .exercise-block').forEach(block => {
                 block.querySelectorAll('.set-row').forEach(row => {
                     const w = row.querySelector('.set-weight').value;
                     const r = row.querySelector('.set-reps').value;
-                    const s = row.querySelector('.set-count').value;
-                    const v = calcSetVolume(w, r, s);
-                    totalVol += v;
-                    const preview = row.querySelector('.set-vol-preview');
-                    if (preview) preview.textContent = v > 0 ? `=${v}` : '';
+                    const s = row.querySelector('.set-sets').value;
+                    total += calcSetVolume(w, r, s);
                 });
             });
-            document.getElementById('liveVolumeBadge').textContent = totalVol.toLocaleString();
+            document.getElementById('liveVolumePreview').textContent = total.toLocaleString();
         }
 
-        /**************************************************************
-         * 4. 表單儲存與單項編輯 (CRUD)
-         **************************************************************/
-        function handleFormSubmit(e) {
+        // ==========================================
+        // 儲存與編輯運動紀錄 (CRUD)
+        // ==========================================
+        function handleSaveWorkout(e) {
             e.preventDefault();
 
             const date = document.getElementById('workoutDate').value;
             const location = document.getElementById('workoutLocation').value.trim();
-            const hours = Number(document.getElementById('durationHours').value) || 0;
-            const minutes = Number(document.getElementById('durationMinutes').value) || 0;
+            const hours = parseInt(document.getElementById('durationHours').value, 10) || 0;
+            const minutes = parseInt(document.getElementById('durationMinutes').value, 10) || 0;
+            const editingId = document.getElementById('editingSessionId').value;
 
             if (!date) {
-                showToast('請選擇運動日期', 'error');
+                showToast('請選擇運動日期', 'warning');
                 return;
             }
             if (hours === 0 && minutes === 0) {
-                showToast('請輸入至少 1 分鐘的運動時長', 'error');
+                showToast('請輸入運動時長（小時或分鐘至少一項大於 0）', 'warning');
                 return;
             }
 
             let displayCategory = currentCategory;
+            let mode = 'note';
+
             if (currentCategory === '其他') {
-                const customName = document.getElementById('customCategoryName').value.trim();
+                const customName = document.getElementById('customCategoryInput').value.trim();
                 if (!customName) {
-                    showToast('請輸入自訂運動名稱', 'error');
+                    showToast('請輸入自訂運動名稱', 'warning');
+                    document.getElementById('customCategoryInput').focus();
                     return;
                 }
                 displayCategory = customName;
+                mode = 'note';
 
-                // 若勾選了「設為常用運動」，自動寫入常用清單
-                if (document.getElementById('saveAsFavoriteCheckbox').checked) {
+                if (document.getElementById('autoSaveFavoriteCheck').checked) {
                     addFavoriteCategoryByName(customName, 'note');
-                    currentCategory = customName;
                 }
+            } else {
+                const meta = getCategoryMeta(currentCategory);
+                mode = meta ? meta.mode : 'note';
             }
 
-            const activeMode = currentCategory === '其他' ? 'note' : getCategoryMode(currentCategory);
+            let exercises = [];
+            let totalVolume = 0;
+            let distance = null;
+            let note = '';
 
-            const sessionObj = {
-                id: document.getElementById('editingSessionId').value || ('sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
-                date,
-                category: currentCategory,
-                displayCategory,
-                mode: activeMode,
-                hours,
-                minutes,
-                location,
-                exercises: [],
-                distance: null,
-                note: ''
-            };
-
-            if (activeMode === 'weight') {
-                const blocks = document.querySelectorAll('#exercisesContainer .exercise-block');
-                const exercises = [];
+            if (mode === 'weight') {
+                const blocks = document.querySelectorAll('#exerciseBlocksContainer .exercise-block');
                 for (const block of blocks) {
                     const exName = block.querySelector('.exercise-name-input').value.trim();
                     if (!exName) {
-                        showToast('請填寫重訓動作名稱（例如：squat）', 'error');
+                        showToast('請填寫重訓動作名稱（例如：squat）', 'warning');
+                        block.querySelector('.exercise-name-input').focus();
                         return;
                     }
-                    const sets = [];
+                    const setsArr = [];
                     const rows = block.querySelectorAll('.set-row');
                     for (const row of rows) {
-                        const w = row.querySelector('.set-weight').value.trim();
-                        const r = Number(row.querySelector('.set-reps').value);
-                        const s = Number(row.querySelector('.set-count').value);
-                        if (!r || r <= 0 || !s || s <= 0) {
-                            showToast(`請為動作「${exName}」填寫有效的次數與組數`, 'error');
+                        const wRaw = row.querySelector('.set-weight').value.trim();
+                        const rRaw = parseInt(row.querySelector('.set-reps').value, 10);
+                        const sRaw = parseInt(row.querySelector('.set-sets').value, 10);
+
+                        if (!rRaw || rRaw <= 0 || !sRaw || sRaw <= 0) {
+                            showToast(`請填寫「${exName}」的次數與組數`, 'warning');
                             return;
                         }
-                        sets.push({
-                            weight: w === '' ? '' : Number(w),
-                            reps: r,
-                            sets: s
+                        const weightVal = wRaw !== '' ? parseFloat(wRaw) : null;
+                        const vol = calcSetVolume(weightVal, rRaw, sRaw);
+                        totalVolume += vol;
+                        setsArr.push({
+                            weight: weightVal,
+                            reps: rRaw,
+                            sets: sRaw,
+                            volume: vol
                         });
                     }
-                    exercises.push({ name: exName, sets });
+                    exercises.push({ name: exName, sets: setsArr });
                 }
-                sessionObj.exercises = exercises;
-            } else if (activeMode === 'run') {
-                const dist = Number(document.getElementById('runningDistance').value);
-                if (!dist || dist <= 0) {
-                    showToast('請輸入有效的跑步距離 (km)', 'error');
+            } else if (mode === 'run') {
+                const distVal = parseFloat(document.getElementById('runningDistance').value);
+                if (isNaN(distVal) || distVal <= 0) {
+                    showToast('請輸入有效的跑步距離 (km)', 'warning');
+                    document.getElementById('runningDistance').focus();
                     return;
                 }
-                sessionObj.distance = dist;
-                sessionObj.note = document.getElementById('runningNote').value.trim();
+                distance = distVal;
             } else {
-                sessionObj.note = document.getElementById('generalNote').value.trim();
+                note = document.getElementById('workoutNote').value.trim();
             }
 
-            const editingId = document.getElementById('editingSessionId').value;
+            const sessionPayload = {
+                id: editingId || ('sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7)),
+                date,
+                category: displayCategory,
+                displayCategory,
+                mode,
+                hours,
+                minutes,
+                location,
+                exercises,
+                totalVolume,
+                distance,
+                note
+            };
+
             if (editingId) {
                 const idx = sessions.findIndex(s => s.id === editingId);
-                if (idx > -1) {
-                    sessions[idx] = sessionObj;
-                    showToast('已更新運動項目紀錄！', 'success');
+                if (idx !== -1) {
+                    sessions[idx] = sessionPayload;
                 }
+                showToast(`已更新 ${formatDisplayDate(date)} 的「${displayCategory}」紀錄！`, 'success');
             } else {
-                sessions.push(sessionObj);
-                showToast('已新增至當日運動紀錄！', 'success');
+                sessions.push(sessionPayload);
+                showToast(`已新增 ${formatDisplayDate(date)} 的「${displayCategory}」紀錄！`, 'success');
             }
 
             saveToStorage();
-            resetForm(date);
+            resetWorkoutForm(date);
             renderDashboard();
         }
 
-        // 點擊單一運動項目的「編輯」按鈕
         function editSession(sessionId) {
-            const sess = sessions.find(s => s.id === sessionId);
-            if (!sess) return;
+            const target = sessions.find(s => s.id === sessionId);
+            if (!target) return;
 
-            document.getElementById('editingSessionId').value = sess.id;
-            document.getElementById('workoutDate').value = sess.date;
-            document.getElementById('workoutLocation').value = sess.location || '';
-            document.getElementById('durationHours').value = sess.hours || 0;
-            document.getElementById('durationMinutes').value = sess.minutes || 0;
+            document.getElementById('editingSessionId').value = target.id;
+            document.getElementById('workoutDate').value = target.date;
+            document.getElementById('workoutLocation').value = target.location || '';
+            document.getElementById('durationHours').value = target.hours || 0;
+            document.getElementById('durationMinutes').value = target.minutes || 0;
 
-            const knownCatNames = categories.map(c => c.name);
-            const targetCat = knownCatNames.includes(sess.displayCategory)
-                ? sess.displayCategory
-                : (knownCatNames.includes(sess.category) ? sess.category : '其他');
-            selectCategory(targetCat);
-            if (targetCat === '其他') {
-                document.getElementById('customCategoryName').value = sess.displayCategory || '';
-            }
-
-            const sMode = getSessionMode(sess);
-            if (sMode === 'weight') {
-                const container = document.getElementById('exercisesContainer');
-                container.innerHTML = '';
-                (sess.exercises || []).forEach(ex => addExerciseBlock(ex));
-                updateLiveVolume();
-            } else if (sMode === 'run') {
-                document.getElementById('runningDistance').value = sess.distance || '';
-                document.getElementById('runningNote').value = sess.note || '';
+            const knownCat = categories.find(c => c.name === target.displayCategory);
+            if (knownCat) {
+                selectCategory(knownCat.name);
             } else {
-                document.getElementById('generalNote').value = sess.note || '';
+                selectCategory('其他');
+                document.getElementById('customCategoryInput').value = target.displayCategory || '';
             }
 
-            // 切換表單標題為編輯模式
-            document.getElementById('formTitle').textContent = `編輯項目：${sess.displayCategory} (${formatDisplayDate(sess.date)})`;
-            document.getElementById('formSubtitle').textContent = '修改完成後點擊下方按鈕即可覆蓋更新';
-            document.getElementById('formModeIcon').innerHTML = '<i class="fa-solid fa-pen"></i>';
-            document.getElementById('formModeIcon').className = 'w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold';
-            document.getElementById('submitBtnText').textContent = '確認更新此運動項目';
-            document.getElementById('submitBtn').className = 'w-full py-2.5 px-4 bg-amber-600 hover:bg-amber-500 text-white font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2';
+            if (target.mode === 'weight') {
+                const container = document.getElementById('exerciseBlocksContainer');
+                container.innerHTML = '';
+                (target.exercises || []).forEach(ex => addExerciseBlock(ex));
+                updateLiveVolumePreview();
+            } else if (target.mode === 'run') {
+                document.getElementById('runningDistance').value = target.distance || '';
+            } else {
+                document.getElementById('workoutNote').value = target.note || '';
+            }
+
+            document.getElementById('formTitle').textContent = `編輯：${target.displayCategory} (${formatDisplayDate(target.date)})`;
+            document.getElementById('submitWorkoutBtnText').textContent = '儲存修改內容';
             document.getElementById('cancelEditBtn').classList.remove('hidden');
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function resetForm(keepDate) {
-            const currentDate = keepDate || document.getElementById('workoutDate').value || new Date().toISOString().slice(0, 10);
-            document.getElementById('editingSessionId').value = '';
-            document.getElementById('workoutDate').value = currentDate;
-            document.getElementById('workoutLocation').value = '';
-            document.getElementById('durationHours').value = 1;
-            document.getElementById('durationMinutes').value = 0;
-            document.getElementById('customCategoryName').value = '';
-            document.getElementById('saveAsFavoriteCheckbox').checked = false;
-            document.getElementById('runningDistance').value = '';
-            document.getElementById('runningNote').value = '';
-            document.getElementById('generalNote').value = '';
+        function deleteSession(sessionId) {
+            const target = sessions.find(s => s.id === sessionId);
+            if (!target) return;
 
-            const defaultCat = categories.length > 0 ? categories[0].name : '其他';
-            selectCategory(defaultCat);
-            resetExerciseBlocks();
-
-            document.getElementById('formTitle').textContent = '新增運動項目';
-            document.getElementById('formSubtitle').textContent = '同一天的不同運動會自動左右併排綜整';
-            document.getElementById('formModeIcon').innerHTML = '<i class="fa-solid fa-plus"></i>';
-            document.getElementById('formModeIcon').className = 'w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold';
-            document.getElementById('submitBtnText').textContent = '儲存運動項目至當日紀錄';
-            document.getElementById('submitBtn').className = 'w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-sm transition flex items-center justify-center gap-2';
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-        }
-
-        // 確認刪除單一項目或整日紀錄
-        function promptDeleteSession(sessionId) {
-            const sess = sessions.find(s => s.id === sessionId);
-            if (!sess) return;
             openConfirmModal(
-                `刪除「${sess.displayCategory}」紀錄？`,
-                `確定要刪除 ${formatDisplayDate(sess.date)} 的「${sess.displayCategory}」項目嗎？同一天的其他運動項目不會受影響。`,
+                '刪除此項運動紀錄',
+                `確定要刪除 ${formatDisplayDate(target.date)} 的「${target.displayCategory}」紀錄嗎？`,
                 () => {
                     sessions = sessions.filter(s => s.id !== sessionId);
                     saveToStorage();
                     if (document.getElementById('editingSessionId').value === sessionId) {
-                        resetForm();
+                        resetWorkoutForm();
                     }
                     renderDashboard();
-                    showToast('已刪除該運動項目', 'info');
+                    showToast('已刪除該項運動紀錄', 'success');
                 }
             );
         }
 
-        function promptDeleteDay(isoDate) {
-            openConfirmModal(
-                `刪除 ${formatDisplayDate(isoDate)} 整日紀錄？`,
-                `這將會刪除該日期底下的所有運動項目，確定要執行嗎？`,
-                () => {
-                    sessions = sessions.filter(s => s.date !== isoDate);
-                    saveToStorage();
-                    renderDashboard();
-                    showToast(`已刪除 ${formatDisplayDate(isoDate)} 整日紀錄`, 'info');
-                }
-            );
+        function quickAddSameDay(isoDate) {
+            resetWorkoutForm(isoDate);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast(`已切換日期至 ${formatDisplayDate(isoDate)}，請直接輸入新運動項目`, 'success');
         }
 
-        /**************************************************************
-         * 5. 單日綜整看板渲染 (依日期歸戶 + 左右併排呈現)
-         **************************************************************/
-        function getGroupedByDate(filterMonthStr = '') {
-            const map = {};
-            sessions.forEach(s => {
-                if (filterMonthStr && !s.date.startsWith(filterMonthStr)) return;
-                if (!map[s.date]) map[s.date] = [];
-                map[s.date].push(s);
+        function resetWorkoutForm(keepDate = null) {
+            const currentDateVal = keepDate || document.getElementById('workoutDate').value || new Date().toISOString().slice(0, 10);
+            document.getElementById('editingSessionId').value = '';
+            document.getElementById('workoutDate').value = currentDateVal;
+            document.getElementById('workoutLocation').value = '';
+            document.getElementById('durationHours').value = 1;
+            document.getElementById('durationMinutes').value = 0;
+            document.getElementById('customCategoryInput').value = '';
+            document.getElementById('autoSaveFavoriteCheck').checked = false;
+            document.getElementById('runningDistance').value = '';
+            document.getElementById('workoutNote').value = '';
+
+            document.getElementById('formTitle').textContent = '新增運動項目';
+            document.getElementById('submitWorkoutBtnText').textContent = '儲存此項運動紀錄';
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+
+            const defaultCat = categories.length > 0 ? categories[0].name : '其他';
+            selectCategory(defaultCat);
+            resetExerciseBlocks();
+        }
+
+        // ==========================================
+        // 渲染右側每日運動綜整看板 (左右併排呈現)
+        // ==========================================
+        function getFilteredGroupedDays() {
+            const monthFilter = document.getElementById('filterMonthInput').value;
+            const filtered = monthFilter
+                ? sessions.filter(s => s.date && s.date.startsWith(monthFilter))
+                : [...sessions];
+
+            const grouped = {};
+            filtered.forEach(s => {
+                if (!grouped[s.date]) grouped[s.date] = [];
+                grouped[s.date].push(s);
             });
-            // 日期由新到舊排序
-            const sortedDates = Object.keys(map).sort((a, b) => b.localeCompare(a));
-            return sortedDates.map(d => ({ date: d, items: map[d] }));
+
+            const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+            return { sortedDates, grouped, filtered };
         }
 
         function clearMonthFilter() {
-            document.getElementById('filterMonth').value = '';
+            document.getElementById('filterMonthInput').value = '';
             renderDashboard();
         }
 
         function renderDashboard() {
-            const filterMonth = document.getElementById('filterMonth').value;
-            const grouped = getGroupedByDate(filterMonth);
+            const { sortedDates, grouped, filtered } = getFilteredGroupedDays();
             const container = document.getElementById('dailyCardsContainer');
 
-            // 計算頂部總計統計
+            // 更新統計數據
+            document.getElementById('statTotalDays').textContent = `${sortedDates.length} 天`;
+            let totalMinutes = 0;
             let totalVol = 0;
-            let totalDist = 0;
-            grouped.forEach(g => {
-                g.items.forEach(item => {
-                    totalVol += calcSessionVolume(item);
-                    if (getSessionMode(item) === 'run' && item.distance) {
-                        totalDist += Number(item.distance);
-                    }
-                });
+            filtered.forEach(s => {
+                totalMinutes += (parseInt(s.hours, 10) || 0) * 60 + (parseInt(s.minutes, 10) || 0);
+                totalVol += (parseFloat(s.totalVolume) || 0);
             });
+            const sumH = Math.floor(totalMinutes / 60);
+            const sumM = totalMinutes % 60;
+            document.getElementById('statTotalDuration').textContent = formatDuration(sumH, sumM);
+            document.getElementById('statTotalVolume').textContent = totalVol.toLocaleString();
 
-            document.getElementById('statDays').textContent = `${grouped.length} 天`;
-            document.getElementById('statVolume').textContent = totalVol.toLocaleString();
-            document.getElementById('statDistance').textContent = `${Number(totalDist.toFixed(2))} km`;
-
-            if (grouped.length === 0) {
+            if (sortedDates.length === 0) {
                 container.innerHTML = `
-                    <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center space-y-3">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
-                            <i class="fa-regular fa-folder-open text-xl"></i>
+                    <div class="bg-white rounded-2xl border border-dashed border-slate-300 p-10 text-center space-y-2">
+                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-xl">
+                            <i class="fa-solid fa-clipboard-list"></i>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-slate-700">目前尚無符合條件的運動紀錄</h3>
-                            <p class="text-xs text-slate-500 mt-1">請從左側表單選擇日期與運動類別，開始新增您的第一筆運動紀錄。</p>
-                        </div>
+                        <h3 class="text-sm font-bold text-slate-700">目前尚無運動紀錄</h3>
+                        <p class="text-xs text-slate-500">請從左側表單選擇日期與運動類別，開始新增你的第一筆紀錄！</p>
                     </div>
                 `;
                 return;
             }
 
-            container.innerHTML = grouped.map(dayGroup => renderDayCardHTML(dayGroup)).join('');
-        }
+            container.innerHTML = sortedDates.map(date => {
+                const daySessions = grouped[date];
+                let dayMinutes = 0;
+                let dayVolume = 0;
 
-        function renderDayCardHTML(dayGroup) {
-            const displayDate = formatDisplayDate(dayGroup.date);
-            let dayTotalMinutes = 0;
-            let dayTotalVolume = 0;
+                daySessions.forEach(s => {
+                    dayMinutes += (parseInt(s.hours, 10) || 0) * 60 + (parseInt(s.minutes, 10) || 0);
+                    dayVolume += (parseFloat(s.totalVolume) || 0);
+                });
 
-            dayGroup.items.forEach(it => {
-                dayTotalMinutes += (Number(it.hours) || 0) * 60 + (Number(it.minutes) || 0);
-                dayTotalVolume += calcSessionVolume(it);
-            });
+                const dayDurStr = formatDuration(Math.floor(dayMinutes / 60), dayMinutes % 60);
 
-            const totalH = Math.floor(dayTotalMinutes / 60);
-            const totalM = dayTotalMinutes % 60;
-            const dayDurationStr = formatDuration(totalH, totalM);
+                // 單日內各運動項目左右併排欄位
+                const columnsHTML = daySessions.map(s => {
+                    const durText = formatDuration(s.hours, s.minutes);
+                    let bodyContent = '';
 
-            // 左右併排欄位：手機單欄舒適閱讀、平板與電腦自動多欄左右併排
-            const columnsHTML = dayGroup.items.map(item => renderSessionColumnHTML(item)).join('');
-            const gridColsClass = dayGroup.items.length === 1
-                ? 'grid-cols-1'
-                : (dayGroup.items.length === 2 ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3');
+                    if (s.mode === 'weight') {
+                        const exHtml = (s.exercises || []).map(ex => {
+                            const setsLines = (ex.sets || []).map(st =>
+                                `<div class="text-xs font-mono text-slate-700 pl-2 border-l-2 border-indigo-200">${escapeHtml(formatSetString(st.weight, st.reps, st.sets))}</div>`
+                            ).join('');
+                            return `
+                                <div class="space-y-1">
+                                    <div class="text-xs font-bold text-slate-900">${escapeHtml(ex.name)}</div>
+                                    <div class="space-y-0.5">${setsLines}</div>
+                                </div>
+                            `;
+                        }).join('');
 
-            return `
-                <article class="bg-white rounded-2xl shadow-xs border border-slate-200/90 overflow-hidden transition hover:shadow-md">
-                    <!-- 單日卡片頂部標題列 -->
-                    <div class="px-4 sm:px-5 py-3.5 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
-                            <span class="text-base sm:text-lg font-extrabold tracking-tight text-white">${displayDate}</span>
-                            <span class="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
-                                ${dayGroup.items.length} 項運動 · 共 ${dayDurationStr}
-                            </span>
-                            ${dayTotalVolume > 0 ? `
-                                <span class="text-[11px] sm:text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 font-semibold">
-                                    總訓練量 ${dayTotalVolume.toLocaleString()}
-                                </span>
-                            ` : ''}
-                        </div>
-                        <div class="flex items-center gap-1.5">
-                            <button onclick="quickAddForDate('${dayGroup.date}')" class="text-xs text-indigo-300 hover:text-white px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 transition flex items-center gap-1 font-medium" title="在同日新增其他運動">
-                                <i class="fa-solid fa-plus"></i>
-                                <span>同日新增</span>
-                            </button>
-                            <button onclick="promptDeleteDay('${dayGroup.date}')" class="w-7 h-7 rounded-lg text-xs text-slate-400 hover:text-rose-400 hover:bg-slate-800 flex items-center justify-center transition" title="刪除整日紀錄">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- 左右併排項目區 -->
-                    <div class="p-4 sm:p-5 grid ${gridColsClass} gap-3.5 sm:gap-4">
-                        ${columnsHTML}
-                    </div>
-                </article>
-            `;
-        }
-
-        // 渲染單一運動項目欄位 (可獨立編輯與刪除)
-        function renderSessionColumnHTML(item) {
-            const durStr = formatDuration(item.hours, item.minutes);
-            const locBadge = item.location
-                ? `<span class="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md"><i class="fa-solid fa-location-dot text-slate-400"></i>${escapeHtml(item.location)}</span>`
-                : '';
-
-            let bodyContent = '';
-            const itemMode = getSessionMode(item);
-            if (itemMode === 'weight') {
-                const vol = calcSessionVolume(item);
-                const exListHTML = (item.exercises || []).map(ex => {
-                    const setsLines = (ex.sets || []).map(st => {
-                        const lineStr = formatSetString(st.weight, st.reps, st.sets);
-                        const setVol = calcSetVolume(st.weight, st.reps, st.sets);
-                        return `
-                            <div class="flex items-center justify-between text-xs text-slate-700 pl-2 border-l-2 border-indigo-200 py-0.5">
-                                <span class="font-mono font-medium">${lineStr}</span>
-                                <span class="text-[11px] text-slate-400">訓練量 ${setVol.toLocaleString()}</span>
+                        bodyContent = `
+                            <div class="space-y-2.5">
+                                ${exHtml}
+                                <div class="pt-2 border-t border-slate-200/70 flex items-center justify-between text-[11px]">
+                                    <span class="text-slate-500 font-medium">單項訓練量</span>
+                                    <span class="font-extrabold text-indigo-600">${(s.totalVolume || 0).toLocaleString()}</span>
+                                </div>
                             </div>
                         `;
-                    }).join('');
+                    } else if (s.mode === 'run') {
+                        bodyContent = `
+                            <div class="space-y-1">
+                                <div class="text-xs font-bold text-slate-900">距離</div>
+                                <div class="text-sm font-extrabold text-emerald-600 font-mono">${escapeHtml(s.distance)}km</div>
+                            </div>
+                        `;
+                    } else {
+                        bodyContent = s.note
+                            ? `<div class="text-xs text-slate-700 whitespace-pre-line leading-relaxed">${escapeHtml(s.note)}</div>`
+                            : `<div class="text-xs text-slate-400 italic">無額外備註</div>`;
+                    }
+
                     return `
-                        <div class="space-y-1">
-                            <div class="text-xs sm:text-sm font-bold text-slate-800">${escapeHtml(ex.name)}</div>
-                            <div class="space-y-1">${setsLines}</div>
+                        <div class="flex flex-col justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-200/90">
+                            <div class="space-y-2.5">
+                                <div class="flex items-start justify-between gap-2 border-b border-slate-200/80 pb-2">
+                                    <div>
+                                        <span class="text-sm font-extrabold text-slate-900">${escapeHtml(s.displayCategory)}</span>
+                                        <span class="text-xs font-bold text-indigo-600 ml-1">(${escapeHtml(durText)})</span>
+                                        ${s.location ? `<div class="text-[11px] text-slate-500 mt-0.5"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(s.location)}</div>` : ''}
+                                    </div>
+                                    <div class="flex items-center gap-1 shrink-0">
+                                        <button type="button" onclick="editSession('${escapeHtml(s.id)}')"
+                                            class="px-2 py-1 rounded-lg bg-white hover:bg-indigo-50 text-slate-600 hover:text-indigo-600 border border-slate-200 text-[11px] font-bold transition"
+                                            title="編輯此項運動">
+                                            編輯
+                                        </button>
+                                        <button type="button" onclick="deleteSession('${escapeHtml(s.id)}')"
+                                            class="px-2 py-1 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 text-[11px] font-bold transition"
+                                            title="刪除此項運動">
+                                            刪除
+                                        </button>
+                                    </div>
+                                </div>
+                                ${bodyContent}
+                            </div>
                         </div>
                     `;
                 }).join('');
 
-                bodyContent = `
-                    <div class="space-y-2.5 flex-1">
-                        ${exListHTML}
-                    </div>
-                    <div class="pt-2.5 mt-3 border-t border-slate-200/70 flex items-center justify-between text-xs">
-                        <span class="text-slate-500 font-medium">項目訓練量合計</span>
-                        <span class="font-extrabold text-indigo-600">${vol.toLocaleString()}</span>
-                    </div>
-                `;
-            } else if (itemMode === 'run') {
-                bodyContent = `
-                    <div class="space-y-2 flex-1">
-                        <div>
-                            <div class="text-xs font-bold text-slate-500">距離</div>
-                            <div class="text-base font-extrabold text-emerald-600 font-mono">${item.distance}km</div>
-                        </div>
-                        ${item.note ? `<div class="text-xs text-slate-600 bg-white p-2 rounded-lg border border-slate-200/70">${escapeHtml(item.note)}</div>` : ''}
-                    </div>
-                `;
-            } else {
-                bodyContent = `
-                    <div class="space-y-1.5 flex-1">
-                        <div class="text-xs font-bold text-slate-500">內容說明</div>
-                        <div class="text-xs sm:text-sm text-slate-700 whitespace-pre-line">${item.note ? escapeHtml(item.note) : '<span class="text-slate-400 italic">無補充說明</span>'}</div>
-                    </div>
-                `;
-            }
-
-            return `
-                <div class="rounded-xl bg-slate-50/90 border border-slate-200/90 p-4 flex flex-col justify-between hover:border-indigo-300 transition group">
-                    <div>
-                        <!-- 項目頂部：類別 (時長) + 獨立編輯/刪除按鈕 -->
-                        <div class="flex items-start justify-between gap-2 pb-2.5 mb-3 border-b border-slate-200">
-                            <div>
-                                <div class="flex items-center gap-1.5 flex-wrap">
-                                    <span class="text-sm font-extrabold text-slate-900">${escapeHtml(item.displayCategory)}</span>
-                                    <span class="text-xs font-bold text-indigo-600">(${durStr})</span>
-                                </div>
-                                ${locBadge ? `<div class="mt-1">${locBadge}</div>` : ''}
+                return `
+                    <article class="bg-white rounded-2xl shadow-sm border border-slate-200/90 overflow-hidden">
+                        <div class="px-4 sm:px-5 py-3 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex items-center gap-3">
+                                <h3 class="text-sm sm:text-base font-extrabold tracking-wide font-mono">${escapeHtml(formatDisplayDate(date))}</h3>
+                                <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium">
+                                    當日總時長：${escapeHtml(dayDurStr)}
+                                </span>
+                                ${dayVolume > 0 ? `<span class="text-[11px] px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-bold">總訓練量：${dayVolume.toLocaleString()}</span>` : ''}
                             </div>
-                            <div class="flex items-center gap-1 shrink-0">
-                                <button onclick="editSession('${item.id}')" class="px-2 py-1 text-xs font-semibold text-indigo-600 hover:bg-indigo-100 rounded-lg transition flex items-center gap-1" title="單獨編輯此運動項目">
-                                    <i class="fa-solid fa-pen-to-square"></i>
-                                    <span>編輯</span>
-                                </button>
-                                <button onclick="promptDeleteSession('${item.id}')" class="p-1 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition" title="單獨刪除此運動項目">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>
-                            </div>
+                            <button type="button" onclick="quickAddSameDay('${escapeHtml(date)}')"
+                                class="text-xs font-bold text-indigo-300 hover:text-white flex items-center gap-1 transition">
+                                <i class="fa-solid fa-plus-circle"></i>
+                                <span>同日新增運動</span>
+                            </button>
                         </div>
-                        ${bodyContent}
-                    </div>
-                </div>
-            `;
+                        <div class="p-4 sm:p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+                            ${columnsHTML}
+                        </div>
+                    </article>
+                `;
+            }).join('');
         }
 
-        function quickAddForDate(isoDate) {
-            resetForm(isoDate);
-            document.getElementById('workoutDate').value = isoDate;
-            showToast(`已切換日期至 ${formatDisplayDate(isoDate)}，請選擇要新增的運動類別`, 'info');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        }
-
-        /**************************************************************
-         * 7. 匯出報表引擎 (CSV 視覺併排 / Word / PDF)
-         **************************************************************/
+        // ==========================================
+        // 匯出報表引擎 (CSV 左右併排矩陣 / Word / PDF)
+        // ==========================================
         function openExportModal() {
-            if (sessions.length === 0) {
-                showToast('目前沒有任何運動紀錄可供匯出', 'warning');
-                return;
-            }
-            populateCustomDateCheckboxes();
-            updateExportPreviewCount();
-            const modal = document.getElementById('exportModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+            const currentMonth = document.getElementById('filterMonthInput').value || new Date().toISOString().slice(0, 7);
+            document.getElementById('exportMonthInput').value = currentMonth;
+            renderExportCustomDatesList();
+            setExportRangeMode('month');
+            document.getElementById('exportModal').classList.remove('hidden');
         }
 
         function closeExportModal() {
-            const modal = document.getElementById('exportModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
+            document.getElementById('exportModal').classList.add('hidden');
         }
 
-        function toggleExportScope() {
-            const scope = document.querySelector('input[name="exportScope"]:checked').value;
+        function setExportRangeMode(mode) {
+            exportRangeMode = mode;
+            const monthBtn = document.getElementById('exportModeMonthBtn');
+            const customBtn = document.getElementById('exportModeCustomBtn');
             const monthBox = document.getElementById('exportMonthSelectorBox');
-            const customBox = document.getElementById('exportCustomDatesBox');
-            if (scope === 'month') {
+            const customBox = document.getElementById('exportCustomDaysBox');
+
+            if (mode === 'month') {
+                monthBtn.className = 'py-2.5 px-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center justify-center gap-2 transition';
+                customBtn.className = 'py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition';
                 monthBox.classList.remove('hidden');
                 customBox.classList.add('hidden');
             } else {
+                customBtn.className = 'py-2.5 px-3 rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-xs font-bold flex items-center justify-center gap-2 transition';
+                monthBtn.className = 'py-2.5 px-3 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-bold flex items-center justify-center gap-2 transition';
                 monthBox.classList.add('hidden');
                 customBox.classList.remove('hidden');
             }
-            updateExportPreviewCount();
+            updateExportPreview();
         }
 
-        function populateCustomDateCheckboxes() {
-            const grouped = getGroupedByDate();
-            const box = document.getElementById('exportDateCheckboxes');
-            box.innerHTML = grouped.map(g => `
-                <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 cursor-pointer hover:border-indigo-400 text-xs">
-                    <input type="checkbox" class="export-date-cb text-indigo-600 rounded" value="${g.date}" checked onchange="updateExportPreviewCount()">
-                    <span class="font-bold text-slate-800">${formatDisplayDate(g.date)}</span>
-                    <span class="text-slate-400 text-[11px]">(${g.items.length}項)</span>
-                </label>
-            `).join('');
-        }
+        function renderExportCustomDatesList() {
+            const uniqueDates = [...new Set(sessions.map(s => s.date))].sort((a, b) => b.localeCompare(a));
+            const listEl = document.getElementById('exportDatesCheckboxList');
 
-        function selectAllExportDates(checked) {
-            document.querySelectorAll('.export-date-cb').forEach(cb => cb.checked = checked);
-            updateExportPreviewCount();
-        }
-
-        // 取得使用者目前在 Modal 選取的單日綜整資料 (由舊到新排序方便閱讀)
-        function getSelectedExportDayGroups() {
-            const scope = document.querySelector('input[name="exportScope"]:checked').value;
-            let groups = [];
-            if (scope === 'month') {
-                const m = document.getElementById('exportMonthInput').value;
-                groups = getGroupedByDate(m);
-            } else {
-                const checkedDates = new Set(
-                    Array.from(document.querySelectorAll('.export-date-cb:checked')).map(cb => cb.value)
-                );
-                groups = getGroupedByDate().filter(g => checkedDates.has(g.date));
+            if (uniqueDates.length === 0) {
+                listEl.innerHTML = `<div class="col-span-3 text-xs text-slate-400 py-2">目前尚無任何可勾選的運動日期</div>`;
+                return;
             }
-            return groups.sort((a, b) => a.date.localeCompare(b.date));
+
+            listEl.innerHTML = uniqueDates.map(d => {
+                const count = sessions.filter(s => s.date === d).length;
+                return `
+                    <label class="flex items-center gap-2 p-2 rounded-lg bg-white border border-slate-200 text-xs cursor-pointer select-none">
+                        <input type="checkbox" value="${escapeHtml(d)}" checked onchange="updateExportPreview()"
+                            class="export-date-check rounded text-indigo-600 focus:ring-indigo-500">
+                        <span class="font-mono font-bold text-slate-800">${escapeHtml(formatDisplayDate(d))}</span>
+                        <span class="text-[11px] text-slate-400">(${count}項)</span>
+                    </label>
+                `;
+            }).join('');
         }
 
-        function updateExportPreviewCount() {
-            const selected = getSelectedExportDayGroups();
-            document.getElementById('exportSelectedCount').textContent = `${selected.length} 天`;
+        function toggleAllExportDates(checked) {
+            document.querySelectorAll('.export-date-check').forEach(cb => {
+                cb.checked = checked;
+            });
+            updateExportPreview();
         }
 
-        // 將單一運動項目轉為視覺化多行文字陣列 (供 CSV 併排矩陣使用)
-        function buildSessionLinesForMatrix(item) {
+        function getSelectedExportData() {
+            let targetDates = [];
+            if (exportRangeMode === 'month') {
+                const m = document.getElementById('exportMonthInput').value;
+                targetDates = [...new Set(sessions.filter(s => s.date && s.date.startsWith(m)).map(s => s.date))].sort((a, b) => a.localeCompare(b));
+            } else {
+                targetDates = Array.from(document.querySelectorAll('.export-date-check:checked')).map(cb => cb.value).sort((a, b) => a.localeCompare(b));
+            }
+
+            const grouped = {};
+            let totalCount = 0;
+            targetDates.forEach(d => {
+                grouped[d] = sessions.filter(s => s.date === d);
+                totalCount += grouped[d].length;
+            });
+
+            return { targetDates, grouped, totalCount };
+        }
+
+        function updateExportPreview() {
+            const { targetDates, totalCount } = getSelectedExportData();
+            document.getElementById('exportSelectedDaysCount').textContent = targetDates.length;
+            document.getElementById('exportSelectedSessionsCount').textContent = totalCount;
+        }
+
+        // 將單項運動轉為多行文字陣列（供 CSV 二維併排矩陣使用）
+        function buildSessionLinesForMatrix(s) {
             const lines = [];
-            const durStr = formatDuration(item.hours, item.minutes);
-            const locStr = item.location ? ` @${item.location}` : '';
-            lines.push(`${item.displayCategory} (${durStr})${locStr}`);
+            const header = `${s.displayCategory} (${formatDuration(s.hours, s.minutes)})${s.location ? ' @' + s.location : ''}`;
+            lines.push(header);
 
-            const itemMode = getSessionMode(item);
-            if (itemMode === 'weight') {
-                (item.exercises || []).forEach(ex => {
+            if (s.mode === 'weight') {
+                (s.exercises || []).forEach(ex => {
                     lines.push(ex.name);
                     (ex.sets || []).forEach(st => {
                         lines.push(formatSetString(st.weight, st.reps, st.sets));
                     });
                 });
-                lines.push(`訓練量: ${calcSessionVolume(item)}`);
-            } else if (itemMode === 'run') {
+                lines.push(`訓練量: ${s.totalVolume || 0}`);
+            } else if (s.mode === 'run') {
                 lines.push('距離');
-                lines.push(`${item.distance}km`);
-                if (item.note) lines.push(`備註: ${item.note}`);
-            } else {
-                if (item.note) {
-                    lines.push(item.note);
-                } else {
-                    lines.push('(無備註)');
-                }
+                lines.push(`${s.distance}km`);
+            } else if (s.note) {
+                s.note.split('\n').forEach(l => lines.push(l));
             }
             return lines;
         }
 
-        // 7A. 匯出為視覺化左右併排 CSV (Google 試算表直接開啟即為併排格式)
-        function exportToVisualCSV() {
-            const groups = getSelectedExportDayGroups();
-            if (groups.length === 0) {
-                showToast('所選範圍內沒有任何運動紀錄可匯出', 'warning');
+        function csvEscape(cell) {
+            const str = String(cell ?? '');
+            if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }
+
+        // 1. 匯出 Google 試算表 (.csv 左右併排視覺排版)
+        function exportAsCSV() {
+            const { targetDates, grouped } = getSelectedExportData();
+            if (targetDates.length === 0) {
+                showToast('所選範圍內沒有運動紀錄可匯出', 'warning');
                 return;
             }
 
-            const csvRows = [];
-            groups.forEach(dayGroup => {
-                // 第一列：日期標題
-                csvRows.push([formatDisplayDate(dayGroup.date)]);
+            const rows = [];
+            targetDates.forEach(date => {
+                const daySessions = grouped[date];
+                rows.push([formatDisplayDate(date)]);
 
-                // 將當天每個運動項目轉成直向文字陣列，然後轉置成左右併排的橫列
-                const columnsLines = dayGroup.items.map(item => buildSessionLinesForMatrix(item));
-                const maxRows = Math.max(...columnsLines.map(c => c.length), 0);
+                const sessionColLines = daySessions.map(s => buildSessionLinesForMatrix(s));
+                const maxRows = Math.max(...sessionColLines.map(col => col.length), 1);
 
                 for (let r = 0; r < maxRows; r++) {
-                    const rowCells = columnsLines.map(col => col[r] !== undefined ? col[r] : '');
-                    csvRows.push(rowCells);
+                    const rowCells = sessionColLines.map(col => col[r] || '');
+                    rows.push(rowCells);
                 }
-                // 每日之間留一空白列分隔
-                csvRows.push([]);
+                rows.push([]); // 日期之間留一行空白方便閱讀
             });
 
-            const csvString = '\uFEFF' + csvRows.map(row =>
-                row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')
-            ).join('\r\n');
-
-            const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+            const csvContent = '\uFEFF' + rows.map(r => r.map(csvEscape).join(',')).join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `每日運動紀錄_${new Date().toISOString().slice(0, 10)}.csv`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            a.remove();
             URL.revokeObjectURL(url);
 
-            closeExportModal();
-            showToast('已下載 CSV 檔案！可直接拖曳至 Google 試算表開啟', 'success');
+            showToast('已下載 CSV 檔案，可直接匯入 Google 試算表！', 'success');
         }
 
-        // 產生供 Word 與 PDF 共用的高品質表格 HTML
-        function buildFormattedReportHTML(groups) {
-            const dayTables = groups.map(dayGroup => {
-                const displayDate = formatDisplayDate(dayGroup.date);
-                const colWidth = Math.floor(100 / Math.max(dayGroup.items.length, 1));
-
-                const cellsHTML = dayGroup.items.map(item => {
-                    const durStr = formatDuration(item.hours, item.minutes);
-                    const locHtml = item.location ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">地點：${escapeHtml(item.location)}</div>` : '';
-                    let innerHtml = '';
-                    const itemMode = getSessionMode(item);
-
-                    if (itemMode === 'weight') {
-                        const exHtml = (item.exercises || []).map(ex => `
-                            <div style="margin-top:8px;">
-                                <div style="font-weight:bold;color:#1e293b;font-size:13px;">${escapeHtml(ex.name)}</div>
-                                ${(ex.sets || []).map(st => `<div style="font-family:monospace;font-size:12px;color:#334155;padding-left:6px;">${formatSetString(st.weight, st.reps, st.sets)}</div>`).join('')}
-                            </div>
-                        `).join('');
-                        innerHtml = `
-                            ${exHtml}
-                            <div style="margin-top:10px;padding-top:6px;border-top:1px dashed #cbd5e1;font-size:12px;font-weight:bold;color:#4f46e5;">
-                                訓練量：${calcSessionVolume(item).toLocaleString()}
-                            </div>
-                        `;
-                    } else if (itemMode === 'run') {
-                        innerHtml = `
-                            <div style="margin-top:8px;">
-                                <div style="font-weight:bold;color:#475569;font-size:12px;">距離</div>
-                                <div style="font-size:15px;font-weight:bold;color:#059669;">${item.distance}km</div>
-                                ${item.note ? `<div style="font-size:12px;color:#64748b;margin-top:4px;">${escapeHtml(item.note)}</div>` : ''}
-                            </div>
-                        `;
-                    } else {
-                        innerHtml = `
-                            <div style="margin-top:8px;font-size:12px;color:#334155;white-space:pre-line;">
-                                ${item.note ? escapeHtml(item.note) : '(無備註)'}
-                            </div>
-                        `;
-                    }
-
+        // 產生供 Word 與 PDF 共用的精美 HTML 報表內容
+        function generateReportHTML(targetDates, grouped) {
+            const blocks = targetDates.map(date => {
+                const daySessions = grouped[date];
+                const cols = daySessions.map(s => {
+                    const lines = buildSessionLinesForMatrix(s);
+                    const titleLine = escapeHtml(lines[0] || '');
+                    const bodyLines = lines.slice(1).map(l => `<div style="margin:2px 0;font-size:13px;color:#334155;">${escapeHtml(l)}</div>`).join('');
                     return `
-                        <td style="width:${colWidth}%;vertical-align:top;padding:12px;border:1px solid #cbd5e1;background:#f8fafc;">
-                            <div style="font-size:14px;font-weight:bold;color:#0f172a;">
-                                ${escapeHtml(item.displayCategory)} <span style="color:#4f46e5;">(${durStr})</span>
+                        <td valign="top" style="border:1px solid #cbd5e1;padding:10px 14px;min-width:180px;background:#f8fafc;">
+                            <div style="font-weight:bold;font-size:14px;color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:6px;">
+                                ${titleLine}
                             </div>
-                            ${locHtml}
-                            ${innerHtml}
+                            ${bodyLines}
                         </td>
                     `;
                 }).join('');
 
                 return `
-                    <div class="print-card" style="margin-bottom:20px;">
-                        <table style="width:100%;border-collapse:collapse;font-family:'Noto Sans TC',sans-serif;">
-                            <thead>
-                                <tr>
-                                    <th colspan="${dayGroup.items.length}" style="text-align:left;background:#0f172a;color:#ffffff;padding:10px 14px;font-size:15px;border:1px solid #0f172a;">
-                                        ${displayDate}
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>${cellsHTML}</tr>
-                            </tbody>
+                    <div class="print-break-inside-avoid" style="margin-bottom:22px;">
+                        <div style="background:#0f172a;color:#ffffff;padding:8px 14px;font-weight:bold;font-size:15px;border-radius:6px 6px 0 0;">
+                            ${escapeHtml(formatDisplayDate(date))}
+                        </div>
+                        <table style="width:100%;border-collapse:collapse;border:1px solid #cbd5e1;">
+                            <tr>${cols}</tr>
                         </table>
                     </div>
                 `;
             }).join('');
 
             return `
-                <div style="font-family:'Noto Sans TC',sans-serif;color:#0f172a;">
-                    <h1 style="font-size:20px;font-weight:bold;margin-bottom:4px;">每日運動紀錄報表</h1>
-                    <p style="font-size:12px;color:#64748b;margin-bottom:16px;">匯出日期：${new Date().toLocaleDateString('zh-TW')} · 共 ${groups.length} 天紀錄</p>
-                    ${dayTables}
+                <div style="font-family:'Noto Sans TC','Microsoft JhengHei',sans-serif;color:#0f172a;">
+                    <h2 style="font-size:20px;margin-bottom:4px;">每日運動紀錄綜整報表</h2>
+                    <p style="font-size:12px;color:#64748b;margin-top:0;margin-bottom:18px;">匯出日期：${escapeHtml(formatDisplayDate(new Date().toISOString().slice(0, 10)))} （共 ${targetDates.length} 天）</p>
+                    ${blocks}
                 </div>
             `;
         }
 
-        // 7B. 匯出為 Word (.doc)
-        function exportToWord() {
-            const groups = getSelectedExportDayGroups();
-            if (groups.length === 0) {
-                showToast('所選範圍內沒有任何運動紀錄可匯出', 'warning');
+        // 2. 匯出 Word (.doc)
+        function exportAsWord() {
+            const { targetDates, grouped } = getSelectedExportData();
+            if (targetDates.length === 0) {
+                showToast('所選範圍內沒有運動紀錄可匯出', 'warning');
                 return;
             }
 
-            const reportHTML = buildFormattedReportHTML(groups);
+            const reportHtml = generateReportHTML(targetDates, grouped);
             const fullDoc = `
-                <html xmlns:o="urn:schemas-microsoft-com:office:office"
-                      xmlns:w="urn:schemas-microsoft-com:office:word"
-                      xmlns="http://www.w3.org/TR/REC-html40">
-                <head><meta charset="utf-8"><title>每日運動紀錄報表</title></head>
-                <body>${reportHTML}</body>
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                <head><meta charset='utf-8'><title>每日運動紀錄</title></head>
+                <body>${reportHtml}</body>
                 </html>
             `;
 
-            const blob = new Blob(['\ufeff', fullDoc], { type: 'application/msword;charset=utf-8' });
+            const blob = new Blob(['\ufeff', fullDoc], { type: 'application/msword' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
             a.download = `每日運動紀錄_${new Date().toISOString().slice(0, 10)}.doc`;
             document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
+            a.remove();
             URL.revokeObjectURL(url);
 
-            closeExportModal();
-            showToast('已下載 Word (.doc) 完整排版檔案！', 'success');
+            showToast('已下載 Word (.doc) 報表檔案！', 'success');
         }
 
-        // 7C. 匯出為 PDF 報表 (透過系統列印成 PDF)
-        function exportToPDF() {
-            const groups = getSelectedExportDayGroups();
-            if (groups.length === 0) {
-                showToast('所選範圍內沒有任何運動紀錄可匯出', 'warning');
+        // 3. 匯出 PDF (觸發高品質列印)
+        function exportAsPDF() {
+            const { targetDates, grouped } = getSelectedExportData();
+            if (targetDates.length === 0) {
+                showToast('所選範圍內沒有運動紀錄可列印', 'warning');
                 return;
             }
 
-            const printContainer = document.getElementById('printReportContainer');
-            printContainer.innerHTML = buildFormattedReportHTML(groups);
+            const printArea = document.getElementById('printReportArea');
+            printArea.innerHTML = generateReportHTML(targetDates, grouped);
             closeExportModal();
-
             setTimeout(() => {
                 window.print();
             }, 150);
         }
 
-        /**************************************************************
-         * 8. 通用 UI 工具 (Confirm Modal / Toast / HTML Escape)
-         **************************************************************/
-        function openConfirmModal(title, desc, onConfirm) {
-            document.getElementById('confirmModalTitle').textContent = title;
-            document.getElementById('confirmModalDesc').textContent = desc;
-            const modal = document.getElementById('confirmModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
+        // ==========================================
+        // 系統初始化
+        // ==========================================
+        window.onload = function () {
+            loadFromStorage();
+            const today = new Date().toISOString().slice(0, 10);
+            document.getElementById('workoutDate').value = today;
 
-            const btn = document.getElementById('confirmModalActionBtn');
-            btn.onclick = () => {
-                closeConfirmModal();
-                onConfirm();
-            };
-        }
-
-        function closeConfirmModal() {
-            const modal = document.getElementById('confirmModal');
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        }
-
-        function showToast(message, type = 'info') {
-            const container = document.getElementById('toastContainer');
-            const toast = document.createElement('div');
-            const colors = {
-                success: 'bg-emerald-600 text-white',
-                error: 'bg-rose-600 text-white',
-                warning: 'bg-amber-500 text-white',
-                info: 'bg-slate-800 text-white'
-            };
-            const icons = {
-                success: 'fa-circle-check',
-                error: 'fa-circle-exclamation',
-                warning: 'fa-triangle-exclamation',
-                info: 'fa-circle-info'
-            };
-
-            toast.className = `${colors[type] || colors.info} px-4 py-2.5 rounded-xl shadow-lg text-xs sm:text-sm font-medium flex items-center gap-2 transition-all duration-300`;
-            toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${escapeHtml(message)}</span>`;
-            container.appendChild(toast);
-
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        }
+            renderCategoryButtons();
+            const firstCat = categories.length > 0 ? categories[0].name : '其他';
+            selectCategory(firstCat);
+            resetExerciseBlocks();
+            renderDashboard();
+        };
     </script>
 </body>
 </html>
