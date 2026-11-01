@@ -134,7 +134,10 @@
                             <label class="block text-xs font-semibold text-slate-700">
                                 運動類別 / 常用清單 <span class="text-rose-500">*</span>
                             </label>
-                            <span class="text-[11px] text-indigo-600 font-medium">點「其他」可新增常用運動</span>
+                            <button type="button" onclick="openCategoryManagerModal()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1 bg-indigo-50 hover:bg-indigo-100 px-2.5 py-1 rounded-lg transition">
+                                <i class="fa-solid fa-gear"></i>
+                                <span>管理 / 編輯類型</span>
+                            </button>
                         </div>
                         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2" id="categoryButtons"></div>
                     </div>
@@ -414,6 +417,60 @@
         </div>
     </div>
 
+    <!-- 管理運動類別 Modal (支援編輯與刪除預設/自訂運動類型) -->
+    <div id="categoryManagerModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 hidden items-center justify-center p-4 no-print">
+        <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full overflow-hidden flex flex-col max-h-[88vh]">
+            <!-- Modal Header -->
+            <div class="px-5 py-4 bg-slate-900 text-white flex items-center justify-between">
+                <div class="flex items-center gap-2.5">
+                    <i class="fa-solid fa-sliders text-indigo-400"></i>
+                    <h3 class="font-bold text-base">管理運動類型 (預設與自訂)</h3>
+                </div>
+                <button type="button" onclick="closeCategoryManagerModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-5 overflow-y-auto space-y-4 flex-1">
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    您可自由<strong>修改名稱</strong>、切換<strong>欄位紀錄模式</strong>（重訓組數、跑步距離、一般備註）或<strong>刪除</strong>任何預設與自訂運動類型。
+                </p>
+
+                <!-- 運動類型清單 -->
+                <div id="categoryManagerList" class="space-y-2.5"></div>
+
+                <!-- 快速新增運動類型 -->
+                <div class="pt-3 border-t border-slate-200">
+                    <label class="block text-xs font-bold text-slate-700 mb-2">新增常用運動類型</label>
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <input type="text" id="newManagerCatName" placeholder="輸入運動名稱 (例：羽球、硬舉)"
+                            class="flex-1 px-3 py-2 text-xs sm:text-sm bg-slate-50 rounded-xl border border-slate-300 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                        <select id="newManagerCatMode" class="px-3 py-2 text-xs sm:text-sm bg-slate-50 rounded-xl border border-slate-300 focus:bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="note">一般備註模式</option>
+                            <option value="weight">重訓組數模式</option>
+                            <option value="run">跑步距離模式</option>
+                        </select>
+                        <button type="button" onclick="addCategoryFromManager()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl transition shrink-0">
+                            新增
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-5 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+                <button type="button" onclick="resetDefaultCategories()" class="text-xs text-slate-500 hover:text-slate-800 font-medium flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-rotate-left"></i>
+                    <span>恢復系統預設運動</span>
+                </button>
+                <button type="button" onclick="closeCategoryManagerModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition">
+                    完成
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 確認刪除 Modal (取代原生 confirm) -->
     <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4 no-print">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-sm w-full p-6 space-y-4">
@@ -446,20 +503,22 @@
          **************************************************************/
         const STORAGE_KEY = 'WORKOUT_LOGGER_SESSIONS_V1';
         const FAVORITE_CATS_KEY = 'WORKOUT_LOGGER_FAV_CATS_V1';
-        const BASE_CATEGORIES = [
-            { name: '重訓', icon: 'fa-dumbbell', isSystem: true },
-            { name: '跑步', icon: 'fa-person-running', isSystem: true },
-            { name: '徒手訓練', icon: 'fa-person-harassing', isSystem: true }
+        const ALL_CATS_KEY = 'WORKOUT_LOGGER_ALL_CATS_V2';
+
+        const DEFAULT_CATEGORIES = [
+            { id: 'cat_weight', name: '重訓', icon: 'fa-dumbbell', mode: 'weight', isDefault: true },
+            { id: 'cat_run', name: '跑步', icon: 'fa-person-running', mode: 'run', isDefault: true },
+            { id: 'cat_bodyweight', name: '徒手訓練', icon: 'fa-person-harassing', mode: 'note', isDefault: true }
         ];
 
         let sessions = []; // 儲存所有獨立運動項目 (Session)
-        let favoriteCategories = []; // 使用者自訂的常用運動清單
+        let categories = []; // 統一管理所有預設與自訂運動類型
         let currentCategory = '重訓';
 
         // 初始化應用程式
         window.addEventListener('DOMContentLoaded', () => {
             loadFromStorage();
-            loadFavoriteCategories();
+            loadCategories();
 
             // 預設日期設為今日
             const today = new Date().toISOString().slice(0, 10);
@@ -467,7 +526,8 @@
             document.getElementById('exportMonthInput').value = today.slice(0, 7);
 
             renderCategoryButtons();
-            selectCategory('重訓');
+            const firstCat = categories.length > 0 ? categories[0].name : '其他';
+            selectCategory(firstCat);
             resetExerciseBlocks();
             renderDashboard();
         });
@@ -476,7 +536,6 @@
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 const parsed = raw ? JSON.parse(raw) : [];
-                // 清除舊版可能殘留的內建 demo 資料
                 sessions = parsed.filter(s => s.id !== 'demo_20261101_weight' && s.id !== 'demo_20261101_run');
             } catch (e) {
                 console.error('讀取 LocalStorage 失敗:', e);
@@ -492,48 +551,79 @@
             }
         }
 
-        function loadFavoriteCategories() {
+        // 載入運動類型清單（自動相容並遷移舊版常用清單）
+        function loadCategories() {
             try {
-                const raw = localStorage.getItem(FAVORITE_CATS_KEY);
-                favoriteCategories = raw ? JSON.parse(raw) : [];
+                const raw = localStorage.getItem(ALL_CATS_KEY);
+                if (raw) {
+                    categories = JSON.parse(raw);
+                } else {
+                    const oldFavRaw = localStorage.getItem(FAVORITE_CATS_KEY);
+                    const oldFavs = oldFavRaw ? JSON.parse(oldFavRaw) : [];
+                    categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
+                    oldFavs.forEach(name => {
+                        if (!categories.some(c => c.name === name)) {
+                            categories.push({
+                                id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                                name,
+                                icon: 'fa-star',
+                                mode: 'note',
+                                isDefault: false
+                            });
+                        }
+                    });
+                    saveCategories();
+                }
             } catch (e) {
-                favoriteCategories = [];
+                categories = JSON.parse(JSON.stringify(DEFAULT_CATEGORIES));
             }
         }
 
-        function saveFavoriteCategories() {
+        function saveCategories() {
             try {
-                localStorage.setItem(FAVORITE_CATS_KEY, JSON.stringify(favoriteCategories));
+                localStorage.setItem(ALL_CATS_KEY, JSON.stringify(categories));
             } catch (e) {
-                console.error('儲存常用運動失敗:', e);
+                console.error('儲存運動類型失敗:', e);
             }
         }
 
-        // 渲染運動類別按鈕（系統預設：重訓、跑步、徒手訓練 + 使用者設為常用的運動 + 其他）
+        // 判斷某個運動類別對應的表單模式 ('weight' | 'run' | 'note')
+        function getCategoryMode(catName) {
+            const found = categories.find(c => c.name === catName);
+            if (found && found.mode) return found.mode;
+            if (catName === '重訓') return 'weight';
+            if (catName === '跑步') return 'run';
+            return 'note';
+        }
+
+        // 判斷單筆紀錄的輸入模式（優先讀取紀錄本身特徵，相容改名後的類別）
+        function getSessionMode(sess) {
+            if (sess.mode) return sess.mode;
+            if (Array.isArray(sess.exercises) && sess.exercises.length > 0) return 'weight';
+            if (sess.distance !== null && sess.distance !== undefined && sess.distance !== '') return 'run';
+            return getCategoryMode(sess.displayCategory || sess.category);
+        }
+
+        // 渲染運動類別按鈕（包含所有可編輯的預設與自訂類別 + 其他）
         function renderCategoryButtons() {
             const container = document.getElementById('categoryButtons');
-            const baseHTML = BASE_CATEGORIES.map(c => `
-                <button type="button" onclick="selectCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}"
-                    class="cat-btn min-h-[52px] py-2 px-2 text-xs font-semibold rounded-xl border text-center transition flex flex-col items-center justify-center gap-1 relative">
-                    <i class="fa-solid ${c.icon} text-sm"></i>
-                    <span class="truncate max-w-full">${escapeHtml(c.name)}</span>
-                </button>
-            `).join('');
-
-            const favHTML = favoriteCategories.map(name => `
-                <div class="relative group min-h-[52px]">
-                    <button type="button" onclick="selectCategory('${escapeHtml(name)}')" data-cat="${escapeHtml(name)}"
-                        class="cat-btn w-full h-full py-2 px-2 text-xs font-semibold rounded-xl border text-center transition flex flex-col items-center justify-center gap-1">
-                        <i class="fa-solid fa-star text-amber-400 text-sm"></i>
-                        <span class="truncate max-w-full">${escapeHtml(name)}</span>
-                    </button>
-                    <button type="button" onclick="removeFavoriteCategory(event, '${escapeHtml(name)}')"
-                        class="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-rose-500 text-slate-700 hover:text-white text-[10px] flex items-center justify-center shadow-xs transition z-10"
-                        title="從常用運動清單移除「${escapeHtml(name)}」">
-                        <i class="fa-solid fa-xmark"></i>
-                    </button>
-                </div>
-            `).join('');
+            const catsHTML = categories.map(c => {
+                const iconColor = c.icon === 'fa-star' ? 'text-amber-400' : '';
+                return `
+                    <div class="relative group min-h-[52px]">
+                        <button type="button" onclick="selectCategory('${escapeHtml(c.name)}')" data-cat="${escapeHtml(c.name)}"
+                            class="cat-btn w-full h-full py-2 px-2 text-xs font-semibold rounded-xl border text-center transition flex flex-col items-center justify-center gap-1">
+                            <i class="fa-solid ${escapeHtml(c.icon || 'fa-dumbbell')} ${iconColor} text-sm"></i>
+                            <span class="truncate max-w-full">${escapeHtml(c.name)}</span>
+                        </button>
+                        <button type="button" onclick="removeCategoryQuick(event, '${escapeHtml(c.id)}')"
+                            class="opacity-0 group-hover:opacity-100 focus:opacity-100 absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-slate-200 hover:bg-rose-500 text-slate-700 hover:text-white text-[10px] flex items-center justify-center shadow-xs transition z-10"
+                            title="刪除「${escapeHtml(c.name)}」">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
 
             const otherHTML = `
                 <button type="button" onclick="selectCategory('其他')" data-cat="其他"
@@ -543,7 +633,7 @@
                 </button>
             `;
 
-            container.innerHTML = baseHTML + favHTML + otherHTML;
+            container.innerHTML = catsHTML + otherHTML;
         }
 
         // 立即將「其他」輸入框的運動名稱加入常用清單並切換過去
@@ -555,34 +645,206 @@
                 input.focus();
                 return;
             }
-            addFavoriteCategoryByName(name);
+            addFavoriteCategoryByName(name, 'note');
             input.value = '';
             document.getElementById('saveAsFavoriteCheckbox').checked = false;
             selectCategory(name);
         }
 
-        function addFavoriteCategoryByName(name) {
-            const allExisting = [...BASE_CATEGORIES.map(c => c.name), ...favoriteCategories, '其他'];
-            if (allExisting.includes(name)) {
+        function addFavoriteCategoryByName(name, mode = 'note') {
+            if (name === '其他' || categories.some(c => c.name === name)) {
                 showToast(`「${name}」已經在運動類別清單中了`, 'info');
-                return;
+                return false;
             }
-            favoriteCategories.push(name);
-            saveFavoriteCategories();
+            const iconMap = { weight: 'fa-dumbbell', run: 'fa-person-running', note: 'fa-star' };
+            categories.push({
+                id: 'cat_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+                name,
+                icon: iconMap[mode] || 'fa-star',
+                mode,
+                isDefault: false
+            });
+            saveCategories();
             renderCategoryButtons();
             showToast(`已將「${name}」加入常用運動清單！`, 'success');
+            return true;
         }
 
-        function removeFavoriteCategory(e, name) {
+        // 快速從主畫面右上角 x 刪除運動類別
+        function removeCategoryQuick(e, catId) {
             e.stopPropagation();
-            favoriteCategories = favoriteCategories.filter(c => c !== name);
-            saveFavoriteCategories();
-            if (currentCategory === name) {
-                currentCategory = '重訓';
+            const target = categories.find(c => c.id === catId);
+            if (!target) return;
+            openConfirmModal(
+                `刪除「${target.name}」類型？`,
+                `確定要從運動類別清單中移除「${target.name}」嗎？（已儲存的歷史運動紀錄不會被刪除）`,
+                () => {
+                    categories = categories.filter(c => c.id !== catId);
+                    saveCategories();
+                    if (currentCategory === target.name) {
+                        currentCategory = categories.length > 0 ? categories[0].name : '其他';
+                    }
+                    renderCategoryButtons();
+                    selectCategory(currentCategory);
+                    showToast(`已刪除運動類型「${target.name}」`, 'info');
+                }
+            );
+        }
+
+        /**************************************************************
+         * 1B. 管理運動類型 Modal (支援編輯名稱、切換模式、刪除、重置預設)
+         **************************************************************/
+        function openCategoryManagerModal() {
+            renderCategoryManagerList();
+            const modal = document.getElementById('categoryManagerModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeCategoryManagerModal() {
+            const modal = document.getElementById('categoryManagerModal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function renderCategoryManagerList() {
+            const listEl = document.getElementById('categoryManagerList');
+            if (categories.length === 0) {
+                listEl.innerHTML = `<div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-dashed border-slate-200">目前沒有常用運動類型，請從下方新增或點擊「恢復系統預設運動」。</div>`;
+                return;
             }
+
+            listEl.innerHTML = categories.map(c => `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-xl bg-slate-50 border border-slate-200/90" data-id="${escapeHtml(c.id)}">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+                            <i class="fa-solid ${escapeHtml(c.icon || 'fa-dumbbell')} ${c.icon === 'fa-star' ? 'text-amber-400' : ''}"></i>
+                        </span>
+                        <input type="text" value="${escapeHtml(c.name)}" id="editCatName_${escapeHtml(c.id)}"
+                            class="w-full px-2.5 py-1.5 text-xs sm:text-sm font-bold text-slate-800 bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none"
+                            placeholder="運動名稱">
+                    </div>
+                    <div class="flex items-center gap-2 justify-end">
+                        <select id="editCatMode_${escapeHtml(c.id)}"
+                            class="px-2.5 py-1.5 text-xs font-medium text-slate-700 bg-white rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 outline-none">
+                            <option value="weight" ${c.mode === 'weight' ? 'selected' : ''}>重訓組數模式</option>
+                            <option value="run" ${c.mode === 'run' ? 'selected' : ''}>跑步距離模式</option>
+                            <option value="note" ${(!c.mode || c.mode === 'note') ? 'selected' : ''}>一般備註模式</option>
+                        </select>
+                        <button type="button" onclick="saveCategoryEdit('${escapeHtml(c.id)}')"
+                            class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-lg transition shrink-0">
+                            儲存
+                        </button>
+                        <button type="button" onclick="deleteCategoryInManager('${escapeHtml(c.id)}')"
+                            class="w-8 h-8 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:border-rose-200 hover:bg-rose-50 flex items-center justify-center transition shrink-0"
+                            title="刪除此運動類型">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveCategoryEdit(catId) {
+            const target = categories.find(c => c.id === catId);
+            if (!target) return;
+
+            const nameInput = document.getElementById(`editCatName_${catId}`);
+            const modeSelect = document.getElementById(`editCatMode_${catId}`);
+            const newName = nameInput.value.trim();
+            const newMode = modeSelect.value;
+
+            if (!newName) {
+                showToast('運動類型名稱不能為空', 'warning');
+                return;
+            }
+            if (newName === '其他' || categories.some(c => c.id !== catId && c.name === newName)) {
+                showToast(`「${newName}」名稱已存在，請使用其他名稱`, 'warning');
+                return;
+            }
+
+            const oldName = target.name;
+            target.name = newName;
+            target.mode = newMode;
+            if (!target.isDefault) {
+                const iconMap = { weight: 'fa-dumbbell', run: 'fa-person-running', note: 'fa-star' };
+                target.icon = iconMap[newMode] || 'fa-star';
+            }
+
+            // 同步更新歷史紀錄中相同名稱的運動顯示名稱與模式
+            sessions.forEach(s => {
+                if (s.displayCategory === oldName || s.category === oldName) {
+                    s.displayCategory = newName;
+                    s.category = newName;
+                }
+            });
+
+            saveCategories();
+            saveToStorage();
+
+            if (currentCategory === oldName) {
+                currentCategory = newName;
+            }
+
             renderCategoryButtons();
             selectCategory(currentCategory);
-            showToast(`已將「${name}」從常用運動移除`, 'info');
+            renderDashboard();
+            renderCategoryManagerList();
+            showToast(`已更新運動類型「${newName}」`, 'success');
+        }
+
+        function deleteCategoryInManager(catId) {
+            const target = categories.find(c => c.id === catId);
+            if (!target) return;
+
+            categories = categories.filter(c => c.id !== catId);
+            saveCategories();
+
+            if (currentCategory === target.name) {
+                currentCategory = categories.length > 0 ? categories[0].name : '其他';
+            }
+
+            renderCategoryButtons();
+            selectCategory(currentCategory);
+            renderCategoryManagerList();
+            showToast(`已刪除「${target.name}」`, 'info');
+        }
+
+        function addCategoryFromManager() {
+            const nameInput = document.getElementById('newManagerCatName');
+            const modeSelect = document.getElementById('newManagerCatMode');
+            const name = nameInput.value.trim();
+            const mode = modeSelect.value;
+
+            if (!name) {
+                showToast('請輸入要新增的運動名稱', 'warning');
+                nameInput.focus();
+                return;
+            }
+
+            const added = addFavoriteCategoryByName(name, mode);
+            if (added) {
+                nameInput.value = '';
+                selectCategory(name);
+                renderCategoryManagerList();
+            }
+        }
+
+        function resetDefaultCategories() {
+            DEFAULT_CATEGORIES.forEach(def => {
+                const existing = categories.find(c => c.id === def.id || c.name === def.name);
+                if (!existing) {
+                    categories.unshift(JSON.parse(JSON.stringify(def)));
+                } else {
+                    existing.mode = def.mode;
+                    existing.icon = def.icon;
+                }
+            });
+            saveCategories();
+            renderCategoryButtons();
+            selectCategory(categories[0].name);
+            renderCategoryManagerList();
+            showToast('已恢復系統預設運動類型！', 'success');
         }
 
         /**************************************************************
@@ -610,7 +872,7 @@
 
         // 計算單筆重訓 Session 的總訓練量
         function calcSessionVolume(session) {
-            if (session.category !== '重訓' || !Array.isArray(session.exercises)) return 0;
+            if (getSessionMode(session) !== 'weight' || !Array.isArray(session.exercises)) return 0;
             let total = 0;
             session.exercises.forEach(ex => {
                 (ex.sets || []).forEach(st => {
@@ -645,9 +907,9 @@
             currentCategory = cat;
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 if (btn.dataset.cat === cat) {
-                    btn.className = 'cat-btn w-full min-h-[52px] py-2 px-2 text-xs font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-center transition flex flex-col items-center justify-center gap-1 shadow-xs';
+                    btn.className = 'cat-btn w-full h-full min-h-[52px] py-2 px-2 text-xs font-bold rounded-xl border-2 border-indigo-600 bg-indigo-50 text-indigo-700 text-center transition flex flex-col items-center justify-center gap-1 shadow-xs';
                 } else {
-                    btn.className = 'cat-btn w-full min-h-[52px] py-2 px-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-center transition flex flex-col items-center justify-center gap-1';
+                    btn.className = 'cat-btn w-full h-full min-h-[52px] py-2 px-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-center transition flex flex-col items-center justify-center gap-1';
                 }
             });
 
@@ -662,7 +924,8 @@
                 customInput.required = false;
             }
 
-            // 切換對應輸入區塊
+            // 根據該運動類型的模式 ('weight' | 'run' | 'note') 切換對應輸入區塊
+            const mode = cat === '其他' ? 'note' : getCategoryMode(cat);
             const weightSec = document.getElementById('weightTrainingSection');
             const runSec = document.getElementById('runningSection');
             const noteSec = document.getElementById('generalNoteSection');
@@ -673,10 +936,10 @@
             noteSec.classList.add('hidden');
             runDistInput.required = false;
 
-            if (cat === '重訓') {
+            if (mode === 'weight') {
                 weightSec.classList.remove('hidden');
                 updateLiveVolume();
-            } else if (cat === '跑步') {
+            } else if (mode === 'run') {
                 runSec.classList.remove('hidden');
                 runDistInput.required = true;
             } else {
@@ -837,16 +1100,19 @@
 
                 // 若勾選了「設為常用運動」，自動寫入常用清單
                 if (document.getElementById('saveAsFavoriteCheckbox').checked) {
-                    addFavoriteCategoryByName(customName);
+                    addFavoriteCategoryByName(customName, 'note');
                     currentCategory = customName;
                 }
             }
+
+            const activeMode = currentCategory === '其他' ? 'note' : getCategoryMode(currentCategory);
 
             const sessionObj = {
                 id: document.getElementById('editingSessionId').value || ('sess_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6)),
                 date,
                 category: currentCategory,
                 displayCategory,
+                mode: activeMode,
                 hours,
                 minutes,
                 location,
@@ -855,7 +1121,7 @@
                 note: ''
             };
 
-            if (currentCategory === '重訓') {
+            if (activeMode === 'weight') {
                 const blocks = document.querySelectorAll('#exercisesContainer .exercise-block');
                 const exercises = [];
                 for (const block of blocks) {
@@ -883,7 +1149,7 @@
                     exercises.push({ name: exName, sets });
                 }
                 sessionObj.exercises = exercises;
-            } else if (currentCategory === '跑步') {
+            } else if (activeMode === 'run') {
                 const dist = Number(document.getElementById('runningDistance').value);
                 if (!dist || dist <= 0) {
                     showToast('請輸入有效的跑步距離 (km)', 'error');
@@ -923,19 +1189,22 @@
             document.getElementById('durationHours').value = sess.hours || 0;
             document.getElementById('durationMinutes').value = sess.minutes || 0;
 
-            const knownCats = [...BASE_CATEGORIES.map(c => c.name), ...favoriteCategories];
-            const targetCat = knownCats.includes(sess.displayCategory) ? sess.displayCategory : (knownCats.includes(sess.category) ? sess.category : '其他');
+            const knownCatNames = categories.map(c => c.name);
+            const targetCat = knownCatNames.includes(sess.displayCategory)
+                ? sess.displayCategory
+                : (knownCatNames.includes(sess.category) ? sess.category : '其他');
             selectCategory(targetCat);
             if (targetCat === '其他') {
                 document.getElementById('customCategoryName').value = sess.displayCategory || '';
             }
 
-            if (sess.category === '重訓') {
+            const sMode = getSessionMode(sess);
+            if (sMode === 'weight') {
                 const container = document.getElementById('exercisesContainer');
                 container.innerHTML = '';
                 (sess.exercises || []).forEach(ex => addExerciseBlock(ex));
                 updateLiveVolume();
-            } else if (sess.category === '跑步') {
+            } else if (sMode === 'run') {
                 document.getElementById('runningDistance').value = sess.distance || '';
                 document.getElementById('runningNote').value = sess.note || '';
             } else {
@@ -967,7 +1236,8 @@
             document.getElementById('runningNote').value = '';
             document.getElementById('generalNote').value = '';
 
-            selectCategory('重訓');
+            const defaultCat = categories.length > 0 ? categories[0].name : '其他';
+            selectCategory(defaultCat);
             resetExerciseBlocks();
 
             document.getElementById('formTitle').textContent = '新增運動項目';
@@ -1042,7 +1312,7 @@
             grouped.forEach(g => {
                 g.items.forEach(item => {
                     totalVol += calcSessionVolume(item);
-                    if (item.category === '跑步' && item.distance) {
+                    if (getSessionMode(item) === 'run' && item.distance) {
                         totalDist += Number(item.distance);
                     }
                 });
@@ -1132,7 +1402,8 @@
                 : '';
 
             let bodyContent = '';
-            if (item.category === '重訓') {
+            const itemMode = getSessionMode(item);
+            if (itemMode === 'weight') {
                 const vol = calcSessionVolume(item);
                 const exListHTML = (item.exercises || []).map(ex => {
                     const setsLines = (ex.sets || []).map(st => {
@@ -1162,7 +1433,7 @@
                         <span class="font-extrabold text-indigo-600">${vol.toLocaleString()}</span>
                     </div>
                 `;
-            } else if (item.category === '跑步') {
+            } else if (itemMode === 'run') {
                 bodyContent = `
                     <div class="space-y-2 flex-1">
                         <div>
@@ -1296,7 +1567,8 @@
             const locStr = item.location ? ` @${item.location}` : '';
             lines.push(`${item.displayCategory} (${durStr})${locStr}`);
 
-            if (item.category === '重訓') {
+            const itemMode = getSessionMode(item);
+            if (itemMode === 'weight') {
                 (item.exercises || []).forEach(ex => {
                     lines.push(ex.name);
                     (ex.sets || []).forEach(st => {
@@ -1304,7 +1576,7 @@
                     });
                 });
                 lines.push(`訓練量: ${calcSessionVolume(item)}`);
-            } else if (item.category === '跑步') {
+            } else if (itemMode === 'run') {
                 lines.push('距離');
                 lines.push(`${item.distance}km`);
                 if (item.note) lines.push(`備註: ${item.note}`);
@@ -1371,8 +1643,9 @@
                     const durStr = formatDuration(item.hours, item.minutes);
                     const locHtml = item.location ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">地點：${escapeHtml(item.location)}</div>` : '';
                     let innerHtml = '';
+                    const itemMode = getSessionMode(item);
 
-                    if (item.category === '重訓') {
+                    if (itemMode === 'weight') {
                         const exHtml = (item.exercises || []).map(ex => `
                             <div style="margin-top:8px;">
                                 <div style="font-weight:bold;color:#1e293b;font-size:13px;">${escapeHtml(ex.name)}</div>
@@ -1385,7 +1658,7 @@
                                 訓練量：${calcSessionVolume(item).toLocaleString()}
                             </div>
                         `;
-                    } else if (item.category === '跑步') {
+                    } else if (itemMode === 'run') {
                         innerHtml = `
                             <div style="margin-top:8px;">
                                 <div style="font-weight:bold;color:#475569;font-size:12px;">距離</div>
